@@ -7,10 +7,16 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 const DEG = Math.PI / 180;
 
 export function createLighting({ scene, renderer, box, accent, reducedMotion }) {
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  pmrem.dispose();
-  scene.environment = env;
+  // the room reflection is rendered on the GPU, so it is the one thing a lost WebGL context cannot give back
+  // by itself (three.js re-uploads meshes and textures from their CPU copies): rebuild() draws it again
+  let env = null;
+  function buildEnvironment() {
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    pmrem.dispose();
+    scene.environment = env;
+  }
+  buildEnvironment();
   scene.environmentIntensity = 0.55;
 
   const size = box.getSize(new THREE.Vector3());
@@ -67,6 +73,9 @@ export function createLighting({ scene, renderer, box, accent, reducedMotion }) 
       place(azimuth);
       return Math.abs(goal.x - now.x) + Math.abs(goal.y - now.y) > 0.002;
     },
+    // after a context restore. The old reflection lived only in the lost context, so it is dropped, not
+    // disposed (disposing would hand stale GL objects to the new context).
+    rebuild: buildEnvironment,
     dispose() {
       env.dispose();
       shadowTex.dispose();

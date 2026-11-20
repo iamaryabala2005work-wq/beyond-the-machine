@@ -52,12 +52,57 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
 
   // ---- draw loop: on demand
   const invalidate = () => {
-    if (raf || !visible || destroyed) return;
+    if (raf || !visible || destroyed || contextLost) return;
     raf = requestAnimationFrame(frame);
     setActive(true);
   };
   let slow = 0, samples = 0, last = 0, renders = 0;
-  const gpuTimer = mobile ? createGpuTimer(renderer.getContext()) : null;
+  let gpuTimer = mobile ? createGpuTimer(renderer.getContext()) : null;
+
+  // ---- WebGL context loss: a driver reset, or the browser reclaiming the GPU (often a phone with the tab
+  // in the background). three.js stops drawing on loss and, on restore, rebuilds its own state and
+  // re-uploads meshes and textures from their CPU copies. The viewer adds the rest: no frames while lost,
+  // and listeners told at once (stage.js shows the poster again). On restore it remakes the room
+  // reflection and the GPU timer, draws one frame, and only then tells the listeners the car is back.
+  let contextLost = false, contextGen = 0;
+  const contextListeners = new Set();
+  const emitContext = () => contextListeners.forEach((f) => f(contextLost));
+  function onContextLost(e) {
+    e.preventDefault(); // without this the browser never offers the context back
+    if (contextLost || destroyed) return;
+    contextLost = true;
+    contextGen++;
+    cancelAnimationFrame(raf); raf = 0;
+    cancelAnimationFrame(probing); probing = 0;
+    gpuTimer?.dispose(); gpuTimer = null; // its queries belonged to the lost context
+    last = 0;
+    setActive(false);
+    emitContext();
+  }
+  function onContextRestored() {
+    if (!contextLost || destroyed) return;
+    const gen = contextGen;
+    // three.js's own restore listener has already run (it was added when the renderer was made)
+    if (rig) {
+      try {
+        lighting.rebuild();
+        if (mobile) gpuTimer = createGpuTimer(renderer.getContext());
+        // a plain render compiles the shaders in place, a moment's work hidden behind the poster
+        // (compileAsync would poll forever if the context were lost again meanwhile)
+        lighting.update(rig.azimuth());
+        renderer.render(scene, camera);
+      } catch (err) {
+        console.warn('[vehicle-viewer] could not restore the WebGL context; keeping the poster', err);
+        return;
+      }
+    }
+    if (gen !== contextGen || renderer.getContext().isContextLost()) return; // lost again meanwhile
+    contextLost = false;
+    emitContext();
+    if (rig && mobile) probeCadence();
+  }
+  canvas.addEventListener('webglcontextlost', onContextLost);
+  canvas.addEventListener('webglcontextrestored', onContextRestored);
   function frame(now) {
     raf = 0;
     if (!rig) { setActive(false); return; }
@@ -203,12 +248,13 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
     const gl = renderer.getContext();
     return {
       tier,
+      contextLost,
       devicePixelRatio,
       pixelRatio: renderer.getPixelRatio(),
       levels: levels ?? [Math.min(devicePixelRatio || 1, 2)],
       drawingBuffer: [gl.drawingBufferWidth, gl.drawingBufferHeight],
       cssSize: [canvas.clientWidth, canvas.clientHeight],
-      antialias: gl.getContextAttributes().antialias,
+      antialias: gl.getContextAttributes()?.antialias, // null while the context is lost
       msaaSamples: gl.getParameter(gl.SAMPLES),
       anisotropy: anisotropy(),
       gpuTimer: Boolean(gpuTimer),
@@ -231,10 +277,16 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
     // f(true) when the car starts moving, f(false) when it comes to rest; called once at once with the
     // current state. Returns a function that unsubscribes.
     onActivity: (f) => { activityListeners.add(f); f(active); return () => activityListeners.delete(f); },
+    // f(true) when the WebGL context is lost, f(false) once it is restored and a frame is drawn; called
+    // at once if it is lost already. Returns a function that unsubscribes.
+    onContextChange: (f) => { contextListeners.add(f); if (contextLost) f(true); return () => contextListeners.delete(f); },
     quality,
     destroy() {
       setActive(false);
       activityListeners.clear();
+      contextListeners.clear();
+      canvas.removeEventListener('webglcontextlost', onContextLost);
+      canvas.removeEventListener('webglcontextrestored', onContextRestored);
       destroyed = true;
       cancelAnimationFrame(raf);
       cancelAnimationFrame(probing);

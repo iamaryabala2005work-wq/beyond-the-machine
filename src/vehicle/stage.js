@@ -63,8 +63,27 @@ async function boot(stage) {
       onProgress: ui.progress,
     });
   });
-  if (handle) { ui.live(handle); stage.vehicle = handle; linkBackgroundLight(stage, handle); }
+  if (handle) {
+    ui.live(handle);
+    stage.vehicle = handle;
+    const syncLight = linkBackgroundLight(stage, handle);
+    followContext(stage, handle, ui, syncLight);
+  }
   else ui.failed();
+}
+
+// The car's WebGL context can be lost while live (a driver reset; a phone reclaiming the GPU from a
+// background tab). The stage then goes back to the poster at once (vehicle-stage.css: no fade that way)
+// with the controls put away, and returns to live, with the usual fade, once the viewer has restored
+// the context and drawn a frame. If it never comes back, the poster simply stays.
+function followContext(stage, handle, ui, syncLight) {
+  if (typeof handle.onContextChange !== 'function') return;
+  handle.onContextChange((lost) => {
+    stage.dataset.vehicleMode = lost ? 'poster' : 'live';
+    if (lost) ui.suspend();
+    else ui.resume();
+    syncLight?.();
+  });
 }
 
 // The stage's background light ([data-fx], spotlight-cone, mounted by the kit's system.js) is a second
@@ -77,6 +96,9 @@ async function boot(stage) {
 // - On phones the kit bakes it to a still picture whose pause and resume do nothing; under reduced motion
 //   it never runs. Both stay as they are.
 // - A visitor who pressed the light's own pause button keeps it paused.
+// - While the poster is back (the car's WebGL context was lost), the light moves as it does on the poster.
+// The light's own WebGL canvas recovers from a lost context by itself (fx.js makes a fresh canvas) and
+// keeps its paused or running state through that. Returns a function that applies the state again.
 const LIGHT_REST_MS = 1200;
 function linkBackgroundLight(stage, handle) {
   const light = stage.querySelector('[data-fx]');
@@ -87,7 +109,8 @@ function linkBackgroundLight(stage, handle) {
   const apply = () => {
     const ctl = light.__fx;
     if (!ctl) return;
-    if (moving && !pausedByVisitor()) ctl.resume();
+    const posterShown = stage.dataset.vehicleMode !== 'live';
+    if ((moving || posterShown) && !pausedByVisitor()) ctl.resume();
     else ctl.pause();
   };
   handle.onActivity((on) => {
@@ -96,6 +119,7 @@ function linkBackgroundLight(stage, handle) {
     else timer = setTimeout(() => { moving = false; apply(); }, LIGHT_REST_MS);
   });
   new MutationObserver(apply).observe(light, { attributes: true, attributeFilter: ['data-fx-mounted'] });
+  return apply;
 }
 
 export function initVehicleStages() {

@@ -7,6 +7,7 @@ export function bindStageUI(stage) {
   const controls = stage.querySelector('[data-vehicle-controls]');
   const tag = stage.querySelector('[data-vehicle-standin]');
   let shown = 0;
+  let standIn = false;
 
   return {
     loading() {
@@ -23,7 +24,10 @@ export function bindStageUI(stage) {
     live(handle) {
       delete stage.dataset.vehicleLoading;
       if (status) status.hidden = true;
-      handle.ready.then((info) => { if (tag && info?.manifest?.standIn) tag.hidden = false; });
+      handle.ready.then((info) => {
+        standIn = Boolean(info?.manifest?.standIn);
+        if (tag && standIn && stage.dataset.vehicleMode === 'live') tag.hidden = false;
+      });
       if (!controls) return;
       controls.hidden = false;
       const buttons = [...controls.querySelectorAll('[data-view]')];
@@ -41,6 +45,16 @@ export function bindStageUI(stage) {
         zoomIn?.setAttribute('aria-disabled', String(!canIn));
         zoomOut?.setAttribute('aria-disabled', String(!canOut));
       });
+    },
+    // the poster is back for a while (the WebGL context was lost): the controls and the stand-in label
+    // belong to the 3D car, so they step aside until it returns
+    suspend() {
+      if (controls) controls.hidden = true;
+      if (tag) tag.hidden = true;
+    },
+    resume() {
+      if (controls) controls.hidden = false;
+      if (tag && standIn) tag.hidden = false;
     },
     failed() {
       delete stage.dataset.vehicleLoading;

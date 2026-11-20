@@ -46,6 +46,11 @@
   .vehicle-stage__gl { transition: opacity 700ms var(--ease-settle); }
   .hero__stage.vehicle-stage > .vehicle-stage__poster { transition: opacity 700ms var(--ease-settle), visibility 0s linear 700ms; }
 }
+/* back to the poster after being live (the car's WebGL context was lost, stage.js): the poster returns at
+   once, with no fade, over a canvas with nothing to show, and the canvas takes no input meanwhile. The fade
+   still applies on the way to live, which uses the rules above. */
+.hero__stage.vehicle-stage[data-vehicle-mode="poster"] > .vehicle-stage__poster { transition: none; }
+[data-vehicle-mode="poster"] .vehicle-stage__gl { transition: none; pointer-events: none; }
 
 /* loading readout: HUD type, a thin optic line that fills with the download */
 .hero__stage.vehicle-stage > .vehicle-stage__status { z-index: 6; left: 50%; bottom: var(--s-2); translate: -50% 0;
