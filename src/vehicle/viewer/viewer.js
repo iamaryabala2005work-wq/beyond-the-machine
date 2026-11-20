@@ -40,13 +40,27 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
   const wide = matchMedia('(min-width: 1024px)');
   const accent = getComputedStyle(stage).getPropertyValue('--optic').trim() || '#7fe0ee';
 
+  // ---- activity: true from the first frame of a movement until the car comes to rest. stage.js uses it
+  // to let the hero's background light move only while the car does.
+  let active = false;
+  const activityListeners = new Set();
+  function setActive(on) {
+    if (on === active) return;
+    active = on;
+    activityListeners.forEach((f) => f(on));
+  }
+
   // ---- draw loop: on demand
-  const invalidate = () => { if (!raf && visible && !destroyed) raf = requestAnimationFrame(frame); };
+  const invalidate = () => {
+    if (raf || !visible || destroyed) return;
+    raf = requestAnimationFrame(frame);
+    setActive(true);
+  };
   let slow = 0, samples = 0, last = 0, renders = 0;
   const gpuTimer = mobile ? createGpuTimer(renderer.getContext()) : null;
   function frame(now) {
     raf = 0;
-    if (!rig) return;
+    if (!rig) { setActive(false); return; }
     renders++;
     const moving = rig.update(now);
     const lit = lighting.update(rig.azimuth());
@@ -62,7 +76,10 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
       adaptMobile(now, cpuMs);
     }
     if (moving || lit) invalidate();
-    else if (mobile) rest();
+    else {
+      setActive(false);
+      if (mobile) rest();
+    }
   }
 
   // ---- mobile: the governor (quality.js) judges the render's own cost and dropped vsyncs, not the fps
@@ -211,8 +228,13 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
     // the camera's heading in radians (read-only; later phases and tests use it)
     azimuth: () => rig?.azimuth(),
     onZoom: (f) => rig?.onZoom(f),
+    // f(true) when the car starts moving, f(false) when it comes to rest; called once at once with the
+    // current state. Returns a function that unsubscribes.
+    onActivity: (f) => { activityListeners.add(f); f(active); return () => activityListeners.delete(f); },
     quality,
     destroy() {
+      setActive(false);
+      activityListeners.clear();
       destroyed = true;
       cancelAnimationFrame(raf);
       cancelAnimationFrame(probing);

@@ -63,8 +63,39 @@ async function boot(stage) {
       onProgress: ui.progress,
     });
   });
-  if (handle) { ui.live(handle); stage.vehicle = handle; }
+  if (handle) { ui.live(handle); stage.vehicle = handle; linkBackgroundLight(stage, handle); }
   else ui.failed();
+}
+
+// The stage's background light ([data-fx], spotlight-cone, mounted by the kit's system.js) is a second
+// WebGL canvas with its own frame loop. While the 3D car is live, that light moves only while the car
+// does: it holds its current frame when the car comes to rest (after LIGHT_REST_MS, so a run of key
+// presses or a coast does not stop and start it) and carries on from that same frame when the car moves
+// again, so there is no jump. Its look never changes, only whether it animates.
+// - It is mounted asynchronously and may be replaced (a theme change), so the controller is looked up
+//   each time and the state applied again whenever it is (re)mounted.
+// - On phones the kit bakes it to a still picture whose pause and resume do nothing; under reduced motion
+//   it never runs. Both stay as they are.
+// - A visitor who pressed the light's own pause button keeps it paused.
+const LIGHT_REST_MS = 1200;
+function linkBackgroundLight(stage, handle) {
+  const light = stage.querySelector('[data-fx]');
+  if (!light || typeof handle.onActivity !== 'function') return;
+  let moving = false;
+  let timer = 0;
+  const pausedByVisitor = () => !!light.querySelector('.loop-pause.is-paused');
+  const apply = () => {
+    const ctl = light.__fx;
+    if (!ctl) return;
+    if (moving && !pausedByVisitor()) ctl.resume();
+    else ctl.pause();
+  };
+  handle.onActivity((on) => {
+    clearTimeout(timer);
+    if (on) { moving = true; apply(); }
+    else timer = setTimeout(() => { moving = false; apply(); }, LIGHT_REST_MS);
+  });
+  new MutationObserver(apply).observe(light, { attributes: true, attributeFilter: ['data-fx-mounted'] });
 }
 
 export function initVehicleStages() {
