@@ -21,7 +21,7 @@ export function findStages(root = document) {
   return [...root.querySelectorAll('[data-vehicle-stage]')];
 }
 
-export async function attachRenderer(stage, mount) {
+export async function attachRenderer(stage, mount, { onError } = {}) {
   const canvasEl = stage.querySelector('[data-vehicle-canvas]');
   const poster = stage.querySelector('[data-vehicle-poster]');
   if (!canvasEl || typeof mount !== 'function') return null;
@@ -32,7 +32,8 @@ export async function attachRenderer(stage, mount) {
     stage.dataset.vehicleMode = 'live';
     return handle;
   } catch (err) {
-    console.warn('[vehicle-stage] renderer failed; keeping the poster', err);
+    if (onError) onError(err);
+    else console.warn('[vehicle-stage] renderer failed; keeping the poster', err);
     handle?.destroy?.();
     canvasEl.replaceChildren();
     stage.dataset.vehicleMode = 'poster';
@@ -52,17 +53,24 @@ function canRun3D() {
 const tierFor = () => (matchMedia('(max-width: 639px), (pointer: coarse)').matches ? 'mobile' : 'desktop');
 const whenIdle = (fn) => ('requestIdleCallback' in window ? requestIdleCallback(fn, { timeout: 1500 }) : setTimeout(fn, 300));
 
+// Loading the 3D car: two attempts at most, a short pause between them. An attempt fails on any error
+// or when it stalls: LOAD_STALL_MS with no progress (the code chunk, the manifest, the model download,
+// or the shader compile after it), so a slow connection that keeps downloading is never cut off, while
+// one that hangs is. If both attempts fail, the poster stays and the readout says so quietly.
+const LOAD_STALL_MS = 20000;
+const RETRY_DELAY_MS = 1500;
+const ATTEMPTS = 2;
+
 async function boot(stage) {
   const ui = bindStageUI(stage);
-  ui.loading();
-  const handle = await attachRenderer(stage, async (canvasEl, { reducedMotion }) => {
-    const { createViewer } = await import('./viewer/viewer.js');
-    return createViewer(canvasEl, {
-      stage, reducedMotion, tier: tierFor(),
-      manifestUrl: stage.dataset.vehicleModel,
-      onProgress: ui.progress,
+  let handle = null;
+  for (let attempt = 1; attempt <= ATTEMPTS && !handle; attempt++) {
+    if (attempt > 1) await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+    ui.loading();
+    handle = await loadOnce(stage, ui, (err) => {
+      reportVehicleIssue(attempt < ATTEMPTS ? 'vehicle_3d_retry' : 'vehicle_3d_failed', { attempt, reason: String(err?.message ?? err).slice(0, 120) });
     });
-  });
+  }
   if (handle) {
     ui.live(handle);
     stage.vehicle = handle;
@@ -70,6 +78,39 @@ async function boot(stage) {
     followContext(stage, handle, ui, syncLight);
   }
   else ui.failed();
+}
+
+// One attempt, under a stall watchdog: every progress event (and each step that completes) restarts the
+// LOAD_STALL_MS clock; if it runs out, the attempt fails and its viewer is destroyed.
+function loadOnce(stage, ui, onError) {
+  let timer = 0;
+  let stall;
+  const stalled = new Promise((_, reject) => { stall = reject; });
+  stalled.catch(() => {}); // only ever read through the races below
+  const kick = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => stall(new Error(`no loading progress for ${LOAD_STALL_MS / 1000} s`)), LOAD_STALL_MS);
+  };
+  kick();
+  return attachRenderer(stage, async (canvasEl, { reducedMotion }) => {
+    const { createViewer } = await Promise.race([import('./viewer/viewer.js'), stalled]);
+    kick();
+    const viewer = createViewer(canvasEl, {
+      stage, reducedMotion, tier: tierFor(),
+      manifestUrl: stage.dataset.vehicleModel,
+      onProgress: (p) => { kick(); if (p != null) ui.progress(p); },
+    });
+    viewer.ready = Promise.race([viewer.ready, stalled]);
+    return viewer;
+  }, { onError }).finally(() => clearTimeout(timer));
+}
+
+// Loading problems go to Vercel Analytics as a custom event when the page has it (window.va, set up by
+// @vercel/analytics' inject(); track() sends the same call), otherwise to the console. Event data must
+// be flat strings, numbers and booleans. Custom events need a Vercel plan that includes them.
+function reportVehicleIssue(name, data) {
+  if (typeof window.va === 'function') window.va('event', { name, data });
+  else console.warn(`[vehicle-stage] ${name}`, data);
 }
 
 // The car's WebGL context can be lost while live (a driver reset; a phone reclaiming the GPU from a

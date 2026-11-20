@@ -232,12 +232,25 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
     stage.addEventListener('pointerleave', onLeave);
 
     // compile shaders before the first frame, so the hand-off from the poster has no stall
-    await renderer.compileAsync(scene, camera);
+    await compileShaders();
     lighting.update(rig.azimuth());
     renderer.render(scene, camera);
     if (mobile) probeCadence();
     return { manifest };
   })();
+
+  // renderer.compileAsync() with a way out: three.js polls every 10 ms until each shader reports ready,
+  // and with the context lost meanwhile that report never comes, so its poll never ends and the load
+  // hangs. Same check here, but it stops (and the load fails, so stage.js can retry) once the viewer is
+  // destroyed or the context is lost.
+  async function compileShaders() {
+    const pending = renderer.compile(scene, camera);
+    while (pending.size) {
+      if (destroyed || contextLost) throw new Error('shader compile stopped: viewer destroyed or WebGL context lost');
+      for (const m of pending) if (renderer.properties.get(m).currentProgram?.isReady()) pending.delete(m);
+      if (pending.size) await new Promise((r) => setTimeout(r, 10));
+    }
+  }
 
   // texture filtering at glancing angles: 8x, or the GPU's maximum if lower
   function anisotropy() { return Math.min(MAX_ANISOTROPY, renderer.capabilities.getMaxAnisotropy() || 1); }
@@ -300,6 +313,9 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
       lighting?.dispose();
       if (model) disposeObject(model.root);
       renderer.dispose();
+      // free the GPU context now rather than at garbage collection: a failed load is retried with a
+      // new viewer, and browsers cap how many contexts a page may hold
+      if (!renderer.getContext().isContextLost()) renderer.forceContextLoss();
       canvas.remove();
     },
   };

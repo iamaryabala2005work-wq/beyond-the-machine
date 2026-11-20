@@ -6,12 +6,21 @@ export function bindStageUI(stage) {
   const bar = stage.querySelector('[data-vehicle-bar]');
   const controls = stage.querySelector('[data-vehicle-controls]');
   const tag = stage.querySelector('[data-vehicle-standin]');
+  const label = status?.firstElementChild;
+  const loadingText = label?.textContent ?? '';
+  const FAILED_TEXT = '3D view unavailable · showing the photo';
   let shown = 0;
   let standIn = false;
 
   return {
+    // also called again for a retry: the readout starts over from 0%
     loading() {
       if (!status) return;
+      shown = 0;
+      if (label) label.textContent = loadingText;
+      if (value) { value.hidden = false; value.textContent = '0%'; }
+      if (bar) { bar.hidden = false; bar.style.setProperty('--p', 0); }
+      delete status.dataset.state;
       status.hidden = false;
       stage.dataset.vehicleLoading = '';
     },
@@ -56,9 +65,15 @@ export function bindStageUI(stage) {
       if (controls) controls.hidden = false;
       if (tag && standIn) tag.hidden = false;
     },
+    // every attempt failed: the poster stays, and the readout (no percentage, no bar) says so quietly
     failed() {
       delete stage.dataset.vehicleLoading;
-      if (status) status.hidden = true;
+      if (!status) return;
+      if (label) label.textContent = FAILED_TEXT;
+      if (value) value.hidden = true;
+      if (bar) bar.hidden = true;
+      status.dataset.state = 'failed';
+      status.hidden = false;
     },
   };
 }

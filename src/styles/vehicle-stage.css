@@ -42,14 +42,21 @@
 [data-vehicle-mode="live"] > .vehicle-stage__poster { opacity: 0; visibility: hidden; }
 /* the scan is drawn against the photograph's outline; with the 3D car it waits for its own pass */
 [data-vehicle-mode="live"] > .vehicle-stage__scan { display: none; }
+/* The hand-off from the poster to the car, on first load and after a restore: a cross-fade with no dim
+   moment. The canvas (under the poster) is fully in within 250ms while the poster still covers it, and only
+   then does the poster fade away, so the picture never thins out over an empty stage. The poster fades by
+   animation, not transition: the kit's hero entrance (motion.css) sets the poster's `transition` to its own
+   scale and clip-path with a much stronger selector, which silently dropped the opacity fade here. */
 @media (prefers-reduced-motion: no-preference) {
-  .vehicle-stage__gl { transition: opacity 700ms var(--ease-settle); }
-  .hero__stage.vehicle-stage > .vehicle-stage__poster { transition: opacity 700ms var(--ease-settle), visibility 0s linear 700ms; }
+  .vehicle-stage__gl { transition: opacity 250ms var(--ease-settle); }
+  .hero__stage.vehicle-stage[data-vehicle-mode="live"] > .vehicle-stage__poster { animation: vehicle-poster-out 900ms both; }
+}
+@keyframes vehicle-poster-out {
+  0%, 28% { opacity: 1; visibility: visible; animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
+  100% { opacity: 0; visibility: hidden; }
 }
 /* back to the poster after being live (the car's WebGL context was lost, stage.js): the poster returns at
-   once, with no fade, over a canvas with nothing to show, and the canvas takes no input meanwhile. The fade
-   still applies on the way to live, which uses the rules above. */
-.hero__stage.vehicle-stage[data-vehicle-mode="poster"] > .vehicle-stage__poster { transition: none; }
+   once (no animation applies that way) over a canvas with nothing to show, which takes no input meanwhile */
 [data-vehicle-mode="poster"] .vehicle-stage__gl { transition: none; pointer-events: none; }
 
 /* loading readout: HUD type, a thin optic line that fills with the download */
@@ -61,6 +68,9 @@
 .vehicle-stage__bar::after { content: ""; position: absolute; inset: 0; background: var(--optic); transform-origin: 0 50%;
   transform: scaleX(var(--p, 0)); transition: transform 200ms linear; }
 .vehicle-stage__status[hidden], .vehicle-controls[hidden], .vehicle-stage__standin[hidden] { display: none; }
+/* the 3D model could not load: one quiet line in the same HUD type, no percentage and no bar */
+.vehicle-stage__status[data-state="failed"] { grid-template-columns: auto; }
+.vehicle-stage__status > [hidden] { display: none; }
 
 /* the stand-in label: honest about the placeholder model until the Jesko file arrives */
 .hero__stage.vehicle-stage > .vehicle-stage__standin { z-index: 6; top: 0; left: 0; pointer-events: none; }

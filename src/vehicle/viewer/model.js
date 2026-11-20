@@ -17,8 +17,10 @@ export async function loadManifest(url) {
 export async function loadModel(manifest, tier, onProgress, { anisotropy = 1 } = {}) {
   const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   const url = manifest.src[tier] ?? manifest.src.desktop;
+  // every progress event is reported (it shows the download is alive); the fraction only when the size
+  // is known, null otherwise
   const gltf = await loader.loadAsync(url, (e) => {
-    if (e.lengthComputable && e.total) onProgress?.(e.loaded / e.total);
+    onProgress?.(e.lengthComputable && e.total ? e.loaded / e.total : null);
   });
   const car = gltf.scene;
 
