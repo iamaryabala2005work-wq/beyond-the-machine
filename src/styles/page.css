@@ -1,0 +1,32 @@
+/* Page CSS: only what the kit lacks. Section heights, edges, the grid, buttons and the nav are the kit's. */
+
+/* the brief's headline is set in capitals; the HTML keeps sentence case for screen readers */
+.hero__title { text-transform: uppercase; }
+
+/* the nav: the concept tag sits where the words would be (nav--split, left column) */
+.nav--split .nav__links { display: flex; align-items: center; }
+
+/* #machine: four figures in a 2x2 beside the front-quarter detail */
+.machine { align-items: stretch; }
+/* the 2x2 keeps the page grid's gutter, so its second column starts on a column line */
+.machine__figures { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-7) 24px; align-content: start; }
+.spec { display: grid; gap: var(--s-3); padding-top: var(--s-4); border-top: 1px solid var(--hud-line); }
+.spec .t-stat { margin: 0; font-variant-numeric: tabular-nums; }
+.spec__label { margin: 0; color: var(--p-ink); font-size: 16px; line-height: 1.5; max-width: 30ch; }
+.machine__sources { grid-column: 1 / -1; margin: 0; font-size: 14px; color: var(--p-muted); }
+.machine__detail { background: none; border: 0; }
+.machine__detail .frame__img { object-fit: contain; object-position: 50% 0; }
+
+.footer__note { margin: 0; color: var(--p-muted); max-width: 52ch; line-height: 1.6; }
+
+/* the nav-split grid starts at 1024; below it the logo takes the left line and the tag steps out */
+@media (max-width: 1023px) { .nav--split .nav__links { display: none; } }
+
+/* the narrowest phones (320) have no room for the logo and the nav's button: the main action stays in the
+   hero and the close */
+@media (max-width: 399px) { .nav.nav--split:not(.is-open) .nav__actions { display: none; } }
+
+@media (max-width: 639px) {
+  .machine__figures { gap: var(--s-6) 12px; }
+  .spec__label { font-size: 16px; }
+}

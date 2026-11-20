@@ -1,0 +1,11 @@
+{
+ "page": "dist/index.html",
+ "url": null,
+ "root": "dist",
+ "kind": "tech",
+ "category": "Unofficial Jesko Absolut hypercar concept site",
+ "primary": "Explore the machine",
+ "rounds": 3,
+ "start": "2026-11-20T11:26:48.522Z",
+ "by": "gate.mjs --start"
+}

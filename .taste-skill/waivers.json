@@ -1,0 +1,17 @@
+[
+  {
+    "check": "copy-headline",
+    "target": "h1#hero-h",
+    "reason": "The brief fixes the headline word for word as BEYOND THE MACHINE.; the category (an unofficial Jesko Absolut study) and the hard fact (1,600 hp on E85) are in the lead line beside it."
+  },
+  {
+    "check": "hero-lines",
+    "target": "section.hero h1",
+    "reason": "Stress test only: the brief's own headline is 19 characters and sets on two lines at every width; capitals from the brief make a 39-character dummy run four."
+  },
+  {
+    "check": "shader-lint",
+    "target": "_app/viewer",
+    "reason": "three.js's own shader chunks: '#include <common>' is three's preprocessor directive, expanded into GLSL before compilation, so 'common' never reaches the GPU as a name. Library code, not page code."
+  }
+]

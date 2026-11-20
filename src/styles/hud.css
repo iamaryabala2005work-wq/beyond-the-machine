@@ -1,0 +1,10 @@
+/* HUD labels: small technical readouts. A <dl class="hud"> of .hud__item pairs (dt label, dd value),
+   or one .hud-tag. Mono face, 13px, sentence case, tabular figures; never more than three on a screen. */
+.hud { margin: 0; display: flex; gap: var(--s-6); font-family: var(--hud-font); font-size: var(--hud-size); line-height: 1.4; }
+.hud__item { display: grid; gap: 2px; padding-left: var(--s-3); border-left: 1px solid var(--optic-soft); }
+.hud__item dt { color: var(--hud-ink); }
+.hud__item dd { margin: 0; color: var(--hud-value); font-variant-numeric: tabular-nums; }
+
+.hud-tag { display: inline-flex; align-items: center; gap: var(--s-2); font-family: var(--hud-font); font-size: var(--hud-size);
+  color: var(--hud-ink); white-space: nowrap; }
+.hud-tag__dot { width: 6px; height: 6px; border-radius: 50%; background: var(--concept-dot); flex: none; }

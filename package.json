@@ -1,0 +1,23 @@
+{
+  "name": "beyond-the-machine",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Unofficial speculative redesign concept for the Koenigsegg Jesko Absolut. Not affiliated with or endorsed by Koenigsegg Automotive AB.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "vehicle": "node scripts/build-vehicle.mjs",
+    "model": "node scripts/build-model.mjs assets-src/models/car-concept.glb public/vehicle/models/car-concept"
+  },
+  "devDependencies": {
+    "@gltf-transform/cli": "^4.5.1",
+    "meshoptimizer": "^1.2.0",
+    "sharp": "^0.35.5",
+    "vite": "^6.4.6"
+  },
+  "dependencies": {
+    "three": "^0.170.0"
+  }
+}

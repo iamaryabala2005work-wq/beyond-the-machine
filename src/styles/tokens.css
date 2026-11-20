@@ -1,0 +1,28 @@
+/* Beyond the Machine: design tokens.
+   The palette (--p-*), type (--font-*, --display-*), spacing (--s-1 … --s-10), radius, section rhythm
+   (--nav, --padt, --padb, --gut) and type scale (--t-*) come from the skill kit (public/assets/system.css)
+   and the :root block in index.html, printed by `start.mjs brand`. Nothing here redefines them.
+   These tokens extend the system for the parts the kit does not have: the HUD labels, the optical
+   stage and the motion conventions. Colours are derived from the palette, never new hues. */
+:root {
+  /* HUD: technical labels in the mono face, sentence case, tabular figures */
+  --hud-font: var(--font-mono);
+  --hud-size: 13px;
+  --hud-ink: var(--p-muted);
+  --hud-value: var(--p-ink);
+  --hud-line: color-mix(in oklab, var(--p-ink) 14%, transparent);
+
+  /* optics: the accent at low strength for rings, the scan and the concept dot */
+  --optic: var(--p-accent);
+  --optic-faint: color-mix(in oklab, var(--p-accent) 16%, transparent);
+  --optic-soft: color-mix(in oklab, var(--p-accent) 32%, transparent);
+  --concept-dot: #e2b25c; /* the one warm signal: "unofficial" */
+
+  /* motion conventions: one settle curve, three durations; everything rests under reduced motion */
+  --ease-settle: cubic-bezier(.22, 1, .36, 1);
+  --ease-sweep: cubic-bezier(.65, 0, .35, 1);
+  --dur-fast: 180ms;
+  --dur-reveal: 800ms;
+  --dur-scan: 1800ms;
+  --scan-every: 7s;
+}

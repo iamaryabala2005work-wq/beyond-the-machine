@@ -1,0 +1,141 @@
+/* The vehicle stage: the hero's visual (page CSS inside a visual, layout-v4.md).
+   Layers, back to front: the spotlight-cone effect, the optical rings, the 3D canvas slot (empty until
+   Phase 3), the poster cut-out, the scan sweep, the HUD readouts. The kit sizes the stage and the
+   cut-out (layout.css, .hero--product .hero__stage:has(> img.is-cutout)); this file only adds the optics.
+   The cursor-spotlight moment writes --mo-x and --mo-y (0-100%) on the stage; the rings read them. */
+.vehicle-stage { isolation: isolate; --mo-x: 50%; --mo-y: 42%; }
+/* The cursor-spotlight moment sets `.mo-cs > :not(.mo-cs__light) { position: relative }` on the host's children;
+   the stage's layers are absolute, so they are scoped one step tighter here (.hero__stage.vehicle-stage > …). */
+.hero__stage.vehicle-stage > :is(.vehicle-stage__light, .vehicle-stage__optics, .vehicle-stage__canvas, .vehicle-stage__scan, .hud--stage,
+  .vehicle-stage__status, .vehicle-stage__standin, .vehicle-controls) { position: absolute; }
+/* the poster's box stops above the HUD row, so no text lies under the picture */
+.hero__stage.vehicle-stage > .vehicle-stage__poster { position: absolute; inset: 0 0 var(--s-7) 0; width: 100%; height: calc(100% - var(--s-7)); }
+.hero__stage.vehicle-stage > .vehicle-stage__light { inset: 0; z-index: 0; opacity: .55; pointer-events: none;
+  -webkit-mask-image: radial-gradient(58% 62% at 50% 56%, #000 35%, transparent 100%);
+          mask-image: radial-gradient(58% 62% at 50% 56%, #000 35%, transparent 100%); }
+
+/* the cursor-spotlight moment's light fades out before the stage's edges, so a pointer near a corner
+   never shows the stage's box */
+.hero__stage.vehicle-stage > .mo-cs__light {
+  -webkit-mask-image: radial-gradient(60% 70% at 50% 55%, #000 55%, transparent 100%);
+          mask-image: radial-gradient(60% 70% at 50% 55%, #000 55%, transparent 100%); }
+
+/* optical rings: a turntable seen in perspective under the car, drifting a few px toward the pointer */
+.hero__stage.vehicle-stage > .vehicle-stage__optics { inset: 0; z-index: 1; pointer-events: none;
+  --dx: calc((var(--mo-x) - 50%) * 0.035); --dy: calc((var(--mo-y) - 42%) * 0.02); }
+.optic-ring { position: absolute; left: 50%; top: 74%; border-radius: 50%; translate: calc(-50% + var(--dx)) calc(-50% + var(--dy));
+  transition: translate 600ms var(--ease-settle); }
+.optic-ring--outer { width: 96%; aspect-ratio: 5.4 / 1; border: 1px solid var(--optic-faint); }
+.optic-ring--inner { width: 70%; aspect-ratio: 5.4 / 1; border: 1px solid var(--optic-soft);
+  box-shadow: 0 0 48px -8px var(--optic-faint) inset; }
+
+.hero__stage.vehicle-stage > .vehicle-stage__canvas { inset: 0; z-index: 2; }
+.vehicle-stage__canvas:empty { display: none; }
+.hero__stage.vehicle-stage > .vehicle-stage__poster { z-index: 3; filter: drop-shadow(0 40px 40px rgb(0 0 0 / .55)); pointer-events: none; }
+
+/* ---- the 3D viewer (src/vehicle/viewer). It fades in over the poster once its first frame is drawn;
+   the poster then fades out and stays in the DOM as the fallback. */
+.vehicle-stage__gl { display: block; width: 100%; height: 100%; opacity: 0; cursor: grab; outline: none; border-radius: var(--r-md, 12px); }
+.vehicle-stage__gl:active { cursor: grabbing; }
+.vehicle-stage__gl:focus-visible { outline: 2px solid var(--p-action); outline-offset: -2px; }
+[data-vehicle-mode="live"] .vehicle-stage__gl { opacity: 1; }
+[data-vehicle-mode="live"] > .vehicle-stage__poster { opacity: 0; visibility: hidden; }
+/* the scan is drawn against the photograph's outline; with the 3D car it waits for its own pass */
+[data-vehicle-mode="live"] > .vehicle-stage__scan { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .vehicle-stage__gl { transition: opacity 700ms var(--ease-settle); }
+  .hero__stage.vehicle-stage > .vehicle-stage__poster { transition: opacity 700ms var(--ease-settle), visibility 0s linear 700ms; }
+}
+
+/* loading readout: HUD type, a thin optic line that fills with the download */
+.hero__stage.vehicle-stage > .vehicle-stage__status { z-index: 6; left: 50%; bottom: var(--s-2); translate: -50% 0;
+  display: grid; grid-template-columns: auto auto; gap: var(--s-2) var(--s-3); align-items: baseline;
+  font: var(--hud-size)/1.3 var(--hud-font); color: var(--hud-ink); pointer-events: none; }
+.vehicle-stage__pct { color: var(--hud-value); font-variant-numeric: tabular-nums; }
+.vehicle-stage__bar { grid-column: 1 / -1; height: 1px; width: 160px; background: var(--hud-line); position: relative; overflow: hidden; }
+.vehicle-stage__bar::after { content: ""; position: absolute; inset: 0; background: var(--optic); transform-origin: 0 50%;
+  transform: scaleX(var(--p, 0)); transition: transform 200ms linear; }
+.vehicle-stage__status[hidden], .vehicle-controls[hidden], .vehicle-stage__standin[hidden] { display: none; }
+
+/* the stand-in label: honest about the placeholder model until the Jesko file arrives */
+.hero__stage.vehicle-stage > .vehicle-stage__standin { z-index: 6; top: 0; left: 0; pointer-events: none; }
+
+/* view controls: Front / Side / Rear and Reset view, centred on the HUD row */
+.hero__stage.vehicle-stage > .vehicle-controls { z-index: 7; left: 50%; bottom: 0; translate: -50% 0;
+  display: flex; align-items: center; gap: var(--s-3); }
+.vehicle-controls__views { display: flex; padding: 3px; gap: 2px; border: 1px solid var(--hud-line); border-radius: 999px;
+  background: color-mix(in oklab, var(--p-bg) 72%, transparent); backdrop-filter: blur(8px); }
+.vehicle-controls__btn { appearance: none; border: 1px solid transparent; background: none; color: var(--hud-ink);
+  font: 500 var(--hud-size)/1 var(--hud-font); letter-spacing: .02em; white-space: nowrap; height: 34px; padding: 0 var(--s-4); border-radius: 999px;
+  cursor: pointer; transition: color var(--dur-fast), border-color var(--dur-fast), background-color var(--dur-fast), transform var(--dur-fast) var(--ease-settle); }
+.vehicle-controls__btn:hover { color: var(--p-ink); background: color-mix(in oklab, var(--optic) 8%, transparent); }
+.vehicle-controls__btn:active { transform: scale(.96); }
+.vehicle-controls__btn:focus-visible { outline: 2px solid var(--optic); outline-offset: 2px; }
+.vehicle-controls__btn[aria-pressed="true"] { color: var(--optic); border-color: var(--optic-soft); background: color-mix(in oklab, var(--optic) 10%, transparent); }
+/* zoom: two quiet round steps between the views and Reset view */
+.vehicle-controls__zoom { display: flex; padding: 3px; gap: 2px; border: 1px solid var(--hud-line); border-radius: 999px;
+  background: color-mix(in oklab, var(--p-bg) 72%, transparent); backdrop-filter: blur(8px); }
+.vehicle-controls__icon { width: 34px; padding: 0; display: grid; place-items: center; }
+.vehicle-controls__icon svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; }
+.vehicle-controls__btn[aria-disabled="true"] { opacity: .35; cursor: default; background: none; transform: none; }
+.vehicle-controls__reset { height: 40px; border-color: var(--hud-line); background: color-mix(in oklab, var(--p-bg) 72%, transparent); backdrop-filter: blur(8px); }
+.vehicle-controls__reset:hover { border-color: var(--optic-soft); }
+
+/* the scan: a thin vertical beam crosses the car once every --scan-every, masked to the car's own outline */
+.hero__stage.vehicle-stage > .vehicle-stage__scan { inset: 0; z-index: 4; pointer-events: none; padding: 5% 0 4%; background-clip: content-box;
+  background-image: linear-gradient(90deg, transparent 0 calc(var(--scan) - 7%), var(--optic-faint) calc(var(--scan) - 1.2%),
+    color-mix(in oklab, var(--optic) 70%, white) var(--scan), transparent calc(var(--scan) + .25%));
+  -webkit-mask: url(/vehicle/jesko-absolut-1600.webp) center / contain no-repeat content-box;
+          mask: url(/vehicle/jesko-absolut-1600.webp) center / contain no-repeat content-box;
+  mix-blend-mode: screen; opacity: 0; --scan: -10%; }
+@property --scan { syntax: '<percentage>'; inherits: false; initial-value: -10%; }
+@media (prefers-reduced-motion: no-preference) and (min-width: 640px) {
+  .vehicle-stage__scan { animation: vehicle-scan var(--scan-every) var(--ease-sweep) 1.6s infinite; }
+}
+@keyframes vehicle-scan {
+  0% { --scan: -10%; opacity: 0; }
+  4% { opacity: .9; }
+  24% { opacity: .9; }
+  28%, 100% { --scan: 110%; opacity: 0; }
+}
+
+/* HUD readouts on the stage's lower corners, outside the car's silhouette */
+.hero__stage.vehicle-stage > .hud--stage { z-index: 5; inset: auto 0 0 0; justify-content: space-between; pointer-events: none; }
+
+/* tablet: the bottom row is too narrow for the controls between the two HUD readouts, so they move to the
+   top right of the stage, level with the stand-in label (open space above the car) */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .hero__stage.vehicle-stage > .vehicle-controls { top: 0; bottom: auto; left: auto; right: 0; translate: none; }
+  .hero__stage.vehicle-stage > .vehicle-stage__standin { top: 13px; }
+}
+
+/* phone and touch: the rings rest, the scan rests, one HUD line */
+@media (max-width: 639px) {
+  .optic-ring--outer { width: 112%; }
+  .hud--stage { gap: var(--s-4); }
+  /* the controls move to the top of the stage, the stand-in label under them; 44px touch targets */
+  /* row 1: the views and Reset view; row 2: the stand-in label on the left, zoom on the right */
+  .hero__stage.vehicle-stage > .vehicle-controls { top: 0; bottom: auto; left: 0; right: 0; translate: none;
+    flex-wrap: wrap; justify-content: center; gap: var(--s-2); }
+  .vehicle-controls::after { content: ""; order: 2; flex-basis: 100%; height: 0; }
+  .vehicle-controls__views { order: 0; }
+  .vehicle-controls__reset { order: 1; }
+  .vehicle-controls__zoom { order: 3; margin-left: auto; padding: 0; }
+  .vehicle-controls__btn { height: 44px; padding: 0 var(--s-3); }
+  .vehicle-controls__icon { width: 44px; padding: 0; }
+  .vehicle-controls__views { padding: 0; }
+  .vehicle-controls__reset { height: 46px; }
+  .hero__stage.vehicle-stage > .vehicle-stage__standin { top: 69px; left: 0; white-space: nowrap; }
+  /* the canvas starts under the two control rows, so the car frames itself in the free space below them */
+  .hero__stage.vehicle-stage > .vehicle-stage__canvas { inset: 112px 0 44px 0; }
+  /* short phones (320 x 568/640): the stage keeps enough height for the controls, the car and the HUD;
+     the hero grows a little past the screen instead of squeezing the car to nothing */
+  .hero__stage.vehicle-stage { min-height: 340px; }
+  .hero__stage.vehicle-stage > .vehicle-stage__status { bottom: auto; top: var(--s-4); }
+}
+/* the narrowest phones (320): tighter padding keeps the views and Reset view on one row */
+@media (max-width: 399px) {
+  .vehicle-controls__btn { padding: 0 var(--s-2); letter-spacing: 0; }
+  .vehicle-controls__icon { width: 44px; padding: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .optic-ring { transition: none; } }

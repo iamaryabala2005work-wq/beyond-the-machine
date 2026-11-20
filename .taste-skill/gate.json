@@ -1,0 +1,280 @@
+{
+ "start": "2026-11-20T11:26:48.522Z",
+ "round": 0,
+ "idle": 0,
+ "errors": 0,
+ "status": "pass",
+ "history": [
+  {
+   "at": "2026-11-20T11:29:48.249Z",
+   "mode": "manual",
+   "status": "pass",
+   "fails": 0,
+   "round": 0,
+   "reused": false,
+   "stopHookActive": false
+  }
+ ],
+ "max": 3,
+ "marker": {
+  "page": "dist/index.html",
+  "url": null,
+  "root": "dist",
+  "kind": "tech",
+  "category": "Unofficial Jesko Absolut hypercar concept site",
+  "primary": "Explore the machine",
+  "rounds": 3,
+  "start": "2026-11-20T11:26:48.522Z",
+  "by": "gate.mjs --start"
+ },
+ "manual": true,
+ "fp": "1b6fe9e0146455e6",
+ "page": "dist/index.html",
+ "found": {
+  "fails": [
+   {
+    "check": "shader-lint",
+    "where": "_app/viewer-DRMI8F1f.js \"common\"",
+    "msg": "a shader uses \"common\" as a name (line 7: #include <common>): GLSL ES reserves it, so a strict GPU rejects the whole shader and the picture stays empty",
+    "fix": "rename it (flat, smooth, centroid, sample, patch, input, output, filter and the rest are GLSL ES reserved words)",
+    "widths": [
+     1440
+    ],
+    "from": "consistency",
+    "ids": [
+     "shader-lint"
+    ],
+    "wheres": [
+     "_app/viewer-DRMI8F1f.js \"common\""
+    ]
+   },
+   {
+    "check": "copy-headline",
+    "where": "h1#hero-h \"BEYOND THE MACHINE.\"",
+    "msg": "\"BEYOND THE MACHINE.\" does not name what is sold (unofficial jesko absolut hypercar concept site, unofficial, jesko, absolut, from flags); only the line under it does",
+    "fix": "put the category noun in the h1 (and who it is for, or where), in 2 to 8 words",
+    "widths": [
+     1440
+    ],
+    "from": "consistency",
+    "ids": [
+     "copy-headline"
+    ],
+    "wheres": [
+     "h1#hero-h \"BEYOND THE MACHINE.\""
+    ]
+   },
+   {
+    "check": "hero-lines",
+    "where": "section.hero h1",
+    "msg": "the check fills the h1 to 39 characters (this hero's maxChars in heroes.json), not the page's own: it takes 4 lines at 1440, 2 at most",
+    "fix": "the check fills the h1 to this hero's maxChars, not your own: take the next type pairing the deal printed (start.mjs); when the h1 is final and fits, waive it (target: section.hero h1)",
+    "widths": [
+     1440,
+     390
+    ],
+    "from": "layout",
+    "ids": [
+     "hero-lines"
+    ],
+    "wheres": [
+     "section.hero h1"
+    ]
+   }
+  ],
+  "warns": [
+   {
+    "check": "flush",
+    "where": "div.wrap > div.hero-text.hero__in > div.hero__stage.vehicle-stage > div.mo-cs__light",
+    "msg": "its last line sits 24px above the lower edge of section.hero.hero--product, where the ground changes to section#machine",
+    "fix": "give the section its padding at the edge where the ground changes (the closing call keeps a clear gap above the footer)",
+    "widths": [
+     1440
+    ],
+    "from": "consistency"
+   },
+   {
+    "check": "overlap-text",
+    "where": "div.hero-text.hero__in > div.hero__stage.vehicle-stage > div.vehicle-stage__canvas > canvas.vehicle-stage__gl",
+    "msg": "lies over the text \"Stand-in 3D model\" (div.hero__stage.vehicle-stage > span.hud-tag.vehicle-stage__standin) (inside a held section or scroll scene, whose motion --quick does not check)",
+    "fix": "move the box off the text (or the text off the box)",
+    "widths": [
+     1440
+    ],
+    "from": "consistency"
+   },
+   {
+    "check": "cut-text",
+    "where": "p.t-stat.mo-cr > span.mo-cr__col:nth-of-type(1) > span.mo-cr__strip > span:nth-of-type(2) \"2\"",
+    "msg": "cut 43px at the bottom by the overflow of div.span-6.machine__figures > div.spec:nth-of-type(1) > p.t-stat.mo-cr > span.mo-cr__col:nth-of-type(1) (inside a held section or scroll scene, whose motion --quick does not check) (and 9 more like it: \"7\", \"1\", \"1\", \"1\", ...)",
+    "fix": "give the text room: no overflow clipping a line, no line past its box",
+    "widths": [
+     1440
+    ],
+    "from": "consistency"
+   },
+   {
+    "check": "cut-text",
+    "where": "p.t-stat.mo-cr > span.mo-cr__col > span.mo-cr__strip > span:nth-of-type(2) \"0\"",
+    "msg": "cut 43px at the bottom by the overflow of div.span-6.machine__figures > div.spec:nth-of-type(4) > p.t-stat.mo-cr > span.mo-cr__col (inside a held section or scroll scene, whose motion --quick does not check)",
+    "fix": "give the text room: no overflow clipping a line, no line past its box",
+    "widths": [
+     1440
+    ],
+    "from": "consistency"
+   },
+   {
+    "check": "scroll-reveal",
+    "where": "section#machine > div.wrap > div.grid.fill > div.span-6.machine__figures \"1 2 3 4 5 6 7 8 9 0 1 , 6 7 8 9 0 1 2 3 \"",
+    "msg": "starts an animation (1.4 s) the moment it is scrolled into view (an IntersectionObserver) on span.mo-cr__strip (inside a dealt moment's section, [data-moment]: an enter moment is expected on every kind; its still is judged under reduced motion)",
+    "fix": "show it at rest: no fade, rise or unmask when it is scrolled into view",
+    "widths": [
+     1440
+    ],
+    "from": "consistency"
+   },
+   {
+    "check": "copy-buttons",
+    "where": "div.hero-text.hero__in > div.hero__stage.vehicle-stage > div.vehicle-controls > button.vehicle-controls__btn.vehicle-controls__reset \"Reset view\"",
+    "msg": "\"Reset view\" does not start with a verb (book, buy, try, start, get, see...)",
+    "fix": "label buttons with a verb and what the visitor gets (\"Book a room\", \"Start free trial\")",
+    "widths": [
+     1440
+    ],
+    "from": "consistency"
+   },
+   {
+    "check": "off-grid",
+    "where": "div.span-6.machine__figures > div.spec:nth-of-type(1) > p.t-stat.mo-cr > span.mo-cr__ch:nth-of-type(2) \",\"",
+    "msg": "left edge at 102px, 22px off the page margin at 80px (9 elements, like h2#machine-h); 1 more in this section off the grid too (span.mo-cr__ch:nth-of-type(2) at 102px) (inside a held section or scroll scene, whose motion --quick does not check)",
+    "fix": "move it onto the page margin, or the column edge its section uses",
+    "widths": [
+     1440
+    ],
+    "from": "consistency"
+   },
+   {
+    "check": "nav-labels",
+    "where": "header.nav.nav--split > div.wrap.nav__bar > a.nav__logo \"J Jesko Absolut\"",
+    "msg": "\"J Jesko Absolut\" opens a section headed \"BEYOND THE MACHINE.\"",
+    "fix": "name each nav link after the heading of the section it opens",
+    "widths": [
+     1440
+    ],
+    "from": "consistency"
+   },
+   {
+    "check": "label-centre",
+    "where": "header.nav.nav--split > div.wrap.nav__bar > div.nav__actions > a.btn.btn--primary \"Explore the machine\"",
+    "msg": "its label sits 18px off-centre (25px of room at the left, 43px at the right)",
+    "fix": "centre the label in its button, or fill the empty side with an icon",
+    "widths": [
+     1440
+    ],
+    "from": "consistency"
+   },
+   {
+    "check": "action-repeat",
+    "where": "header.nav.nav--split > div.wrap.nav__bar > div.nav__actions > a.btn.btn--primary \"explore the machine\"",
+    "msg": "\"explore the machine\" shows 2 times on the first screen at 1440px (nav, hero): the nav's button and the hero's; nothing else on the screen may repeat it",
+    "fix": "show the action once a screen besides the nav's button: the hero's, the close's or the phone bar's, never all at once",
+    "widths": [
+     1440
+    ],
+    "from": "consistency"
+   },
+   {
+    "check": "container-edges",
+    "where": "div.hero-text.hero__in > div.hero__stage.vehicle-stage > div.vehicle-stage__optics > span.optic-ring.optic-ring--inner",
+    "msg": "a box over half the container wide runs 272-1168px, not on the container's lines at 80-1360px (it is in a scroll scene: told as a WARN) (SR-6)",
+    "fix": "run the picture or box from the container's left line to its right line, or put it in a row or a split",
+    "widths": [
+     1440
+    ],
+    "from": "consistency"
+   },
+   {
+    "check": "container-edges",
+    "where": "div.hero-text.hero__in > div.hero__stage.vehicle-stage > div.vehicle-stage__optics > span.optic-ring.optic-ring--outer",
+    "msg": "a box over half the container wide runs 106-1334px, not on the container's lines at 80-1360px (it is in a scroll scene: told as a WARN) (SR-6)",
+    "fix": "run the picture or box from the container's left line to its right line, or put it in a row or a split",
+    "widths": [
+     1440
+    ],
+    "from": "consistency"
+   },
+   {
+    "check": "off-grid",
+    "where": "div.hero__stage.vehicle-stage > dl.hud.hud--stage > div.hud__item:nth-of-type(1) > dt \"Output on E85\"",
+    "msg": "left edge at 37px, 13px off the page margin at 24px (14 elements, like a.btn.btn--primary); 1 more in this section off the grid too (dd at 37px) (inside a held section or scroll scene, whose motion --quick does not check)",
+    "fix": "move it onto the page margin, or the column edge its section uses",
+    "widths": [
+     390
+    ],
+    "from": "consistency"
+   }
+  ],
+  "crashed": [],
+  "seconds": {
+   "consistency": 157,
+   "layout": 22
+  }
+ },
+ "open": [],
+ "waived": [
+  {
+   "check": "shader-lint",
+   "where": "_app/viewer-DRMI8F1f.js \"common\"",
+   "msg": "a shader uses \"common\" as a name (line 7: #include <common>): GLSL ES reserves it, so a strict GPU rejects the whole shader and the picture stays empty",
+   "fix": "rename it (flat, smooth, centroid, sample, patch, input, output, filter and the rest are GLSL ES reserved words)",
+   "widths": [
+    1440
+   ],
+   "from": "consistency",
+   "ids": [
+    "shader-lint"
+   ],
+   "wheres": [
+    "_app/viewer-DRMI8F1f.js \"common\""
+   ],
+   "reason": "three.js's own shader chunks: '#include <common>' is three's preprocessor directive, expanded into GLSL before compilation, so 'common' never reaches the GPU as a name. Library code, not page code."
+  },
+  {
+   "check": "copy-headline",
+   "where": "h1#hero-h \"BEYOND THE MACHINE.\"",
+   "msg": "\"BEYOND THE MACHINE.\" does not name what is sold (unofficial jesko absolut hypercar concept site, unofficial, jesko, absolut, from flags); only the line under it does",
+   "fix": "put the category noun in the h1 (and who it is for, or where), in 2 to 8 words",
+   "widths": [
+    1440
+   ],
+   "from": "consistency",
+   "ids": [
+    "copy-headline"
+   ],
+   "wheres": [
+    "h1#hero-h \"BEYOND THE MACHINE.\""
+   ],
+   "reason": "The brief fixes the headline word for word as BEYOND THE MACHINE.; the category (an unofficial Jesko Absolut study) and the hard fact (1,600 hp on E85) are in the lead line beside it."
+  },
+  {
+   "check": "hero-lines",
+   "where": "section.hero h1",
+   "msg": "the check fills the h1 to 39 characters (this hero's maxChars in heroes.json), not the page's own: it takes 4 lines at 1440, 2 at most",
+   "fix": "the check fills the h1 to this hero's maxChars, not your own: take the next type pairing the deal printed (start.mjs); when the h1 is final and fits, waive it (target: section.hero h1)",
+   "widths": [
+    1440,
+    390
+   ],
+   "from": "layout",
+   "ids": [
+    "hero-lines"
+   ],
+   "wheres": [
+    "section.hero h1"
+   ],
+   "reason": "Stress test only: the brief's own headline is 19 characters and sets on two lines at every width; capitals from the brief make a 39-character dummy run four."
+  }
+ ],
+ "warnCount": 13,
+ "at": "2026-11-20T11:29:48.251Z"
+}
