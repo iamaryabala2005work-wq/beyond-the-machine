@@ -14,6 +14,7 @@
 // The stage switches data-vehicle-mode from "poster" to "live" only after `ready` resolves, so the
 // poster never blinks out before the model is on screen.
 import { bindStageUI } from './stage-ui.js';
+import { canRun3D, tierFor } from './gate.js';
 
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -41,16 +42,8 @@ export async function attachRenderer(stage, mount, { onError } = {}) {
   }
 }
 
-// Can this device run the viewer? Anything doubtful keeps the poster.
-function canRun3D() {
-  if (!('WebGL2RenderingContext' in window)) return false;
-  const c = navigator.connection;
-  if (c?.saveData || /(^|-)2g$/.test(c?.effectiveType ?? '')) return false;
-  if (navigator.deviceMemory && navigator.deviceMemory < 2) return false;
-  return true;
-}
-
-const tierFor = () => (matchMedia('(max-width: 639px), (pointer: coarse)').matches ? 'mobile' : 'desktop');
+// The model file downloads alongside the 3D code: once the poster has loaded, a script in the page's
+// <head> preloads the right tier's GLB (vite.config.js, vehicleModelPreload), using the same two checks.
 const whenIdle = (fn) => ('requestIdleCallback' in window ? requestIdleCallback(fn, { timeout: 1500 }) : setTimeout(fn, 300));
 
 // Loading the 3D car: two attempts at most, a short pause between them. An attempt fails on any error
