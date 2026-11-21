@@ -15,8 +15,8 @@
     "trademarks": "The Khronos logo (2015) and 3D Commerce logo (2017) in the textures are Khronos Group trademarks, not covered by the CC licence; the viewer hides them."
   },
   "src": {
-    "desktop": "/vehicle/models/car-concept/model-desktop.glb",
-    "mobile": "/vehicle/models/car-concept/model-mobile.glb"
+    "desktop": "/vehicle/models/car-concept/model-desktop.f537c06b.glb",
+    "mobile": "/vehicle/models/car-concept/model-mobile.99bebe7d.glb"
   },
   "build": {
     "simplify": {
