@@ -29,7 +29,9 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
 /* one still per chapter: the stage shows the one whose chapter has the car (data-shot, story.js). A change
    of chapter brings the next still in over the last, which goes only once it is covered, so the stage never
    shows an empty moment between them. */
-.story__still--yours { inset: auto; left: 0; top: 0; width: 0; height: 0; opacity: 0; } /* placed by yours.js */
+/* placed by yours.js; with its shadow margin it can be wider than the screen (the stage clips it), so the
+   page's img max-width must not squeeze it out of shape */
+.story__still--yours { inset: auto; left: 0; top: 0; width: 0; height: 0; max-width: none; max-height: none; opacity: 0; }
 .story__stage[data-shot="yours"] .story__still--power { opacity: 0; }
 .story__stage[data-shot="yours"] .story__still--yours { opacity: 1; }
 @media (prefers-reduced-motion: no-preference) {

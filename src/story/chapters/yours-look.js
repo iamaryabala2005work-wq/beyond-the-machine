@@ -3,9 +3,11 @@
 // the live car is in place and when there is no 3D, so the two always match. Pure data and arithmetic: no
 // DOM, so Node can import it too.
 
-// the turntable: the car starts at the manifest's "yours" shot (the hero's three-quarter) and turns
-// TURN degrees as the chapter scrolls by, slowly and evenly. Reduced motion: it stays at the start.
-export const TURN = 60;
+// the turntable: the car starts at the manifest's "yours" shot (a low front three-quarter, more of the
+// flank than the windscreen: the paint reads best on the side panels) and turns TURN degrees as the
+// chapter scrolls by, slowly and evenly, round toward the full side view (negative: the way that shows
+// more of the flank). Reduced motion: it stays at the start.
+export const TURN = -60;
 export const turnAt = (p) => TURN * Math.min(1, Math.max(0, p));
 
 // the light: as Chapter III leaves it (lit as in the hero, with the story's roofline light and floor
