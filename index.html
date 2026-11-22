@@ -138,12 +138,21 @@
           <source media="(min-width: 900px)" srcset="/vehicle/posters/power-split-lit.webp">
           <img class="story__still story__still--lit story__still--power" src="/vehicle/posters/power-stack-lit.webp" alt="" loading="lazy" decoding="async">
         </picture>
-        <!-- Chapter V's car at the start of its turntable, in its default paint (never tinted to the visitor's
-             choice), cut to the box the live car is fitted into; src/story/chapters/yours.js places it in the
-             chapter's free band exactly as it fits the live car there. -->
+        <!-- Chapter V's car at the start of its turntable, cut to the box the live car is fitted into;
+             src/story/chapters/yours.js places it in the chapter's free band exactly as it fits the live car
+             there. One render per paint (src/story/paint.js): it wears the live car's paint, the default
+             with no 3D. Never a tinted picture. -->
         <img class="story__still story__still--yours" data-still="yours"
-             src="/vehicle/posters/yours-1600.webp" srcset="/vehicle/posters/yours-800.webp 800w, /vehicle/posters/yours-1600.webp 1600w"
+             data-still-base="/vehicle/posters/yours" data-still-widths="800,1600" data-still-default="midnight"
+             src="/vehicle/posters/yours-midnight-1600.webp" srcset="/vehicle/posters/yours-midnight-800.webp 800w, /vehicle/posters/yours-midnight-1600.webp 1600w"
              sizes="(max-width: 639px) 100vw, 80vw" width="2698" height="833" alt="" loading="lazy" decoding="async">
+        <!-- Chapter VI's final shot, a wide low side view, in the paint the visitor chose in Chapter V
+             (default Midnight): one render per paint, placed by src/story/chapters/close.js where the live
+             car lands. With no 3D it is the final shot, without the light sweep. -->
+        <img class="story__still story__still--close" data-still="close"
+             data-still-base="/vehicle/posters/close" data-still-widths="800,1600" data-still-default="midnight"
+             src="/vehicle/posters/close-midnight-1600.webp" srcset="/vehicle/posters/close-midnight-800.webp 800w, /vehicle/posters/close-midnight-1600.webp 1600w"
+             sizes="(max-width: 639px) 100vw, 90vw" width="2765" height="770" alt="" loading="lazy" decoding="async">
       </div>
       <div class="story__canvas" data-story-canvas></div>
       <span class="hud-tag story__standin" data-story-standin hidden>Stand-in 3D model<span class="hud-tag__dot"></span></span>
@@ -185,7 +194,27 @@
         </div>
       </div>
     </section>
+
+    <!-- VI Close (src/story/chapters/close.js): the final shot. The car holds a wide, low side view in the
+         visitor's paint while a light sweep crosses it with the scroll; then the story ends, the pinned
+         stage lets go and the car scrolls up and away. No words over the car: only the mark above it. -->
+    <section class="chapter chapter--close" id="close" data-chapter="close" aria-labelledby="close-h">
+      <div class="chapter__frame">
+        <div class="wrap chapter__in" data-close-head>
+          <p class="chapter__mark" id="close-h"><span aria-hidden="true">VI</span><span class="chapter__dash" aria-hidden="true"></span>Close</p>
+        </div>
+      </div>
+    </section>
   </div>
+
+  <!-- The signature: on black, after the car has gone (src/story/signature.js reveals it once). -->
+  <section class="signature" id="signature" data-signature aria-labelledby="signature-h">
+    <div class="wrap signature__in">
+      <h2 class="signature__title" id="signature-h">Beyond the machine.</h2>
+      <p class="signature__by">Concept by ArcLight Intelligence</p>
+      <a class="btn btn--outline signature__cta" href="https://arclightintelligence.netlify.app" target="_blank" rel="noopener">Get in touch <span aria-hidden="true">→</span><span class="sr-only"> (opens in a new tab)</span></a>
+    </div>
+  </section>
 
   <section class="section ground-surface" id="machine" style="--hm: 2" aria-labelledby="machine-h">
     <div class="wrap">
@@ -213,29 +242,22 @@
   </section>
 </main>
 
-<footer class="footer closing" id="contact" aria-labelledby="close-h">
-  <div class="wrap">
-    <div class="closing__cta close--type">
-      <div class="section-head">
-        <p class="hud-tag closing__concept">Unofficial concept<span class="hud-tag__dot" aria-hidden="true"></span></p>
-        <h2 id="close-h">A concept site for the Jesko Absolut</h2>
-        <p>An independent study of how Koenigsegg’s fastest car could be presented on the web.</p>
-      </div>
-      <a class="btn btn--primary btn--xl btn--wide" href="#machine">Explore the machine<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"/><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"/></svg></a>
+<footer class="footer site-footer" id="contact" aria-label="About this site">
+  <div class="wrap site-footer__in">
+    <p class="hud-tag site-footer__tag">Unofficial concept<span class="hud-tag__dot" aria-hidden="true"></span></p>
+    <p class="site-footer__note">An unofficial, speculative redesign concept. It is not affiliated with, sponsored by or endorsed by Koenigsegg Automotive AB.</p>
+    <div class="site-footer__sources">
+      <h3 class="site-footer__h">Sources</h3>
+      <ul>
+        <li><a href="https://www.koenigsegg.com/model/jesko-absolut" rel="noopener">Jesko Absolut model page</a><span class="site-footer__where">koenigsegg.com</span></li>
+        <li><a href="https://www.koenigsegg.com/technical-specifications-jesko-absolut" rel="noopener">Jesko Absolut technical specifications</a><span class="site-footer__where">koenigsegg.com</span></li>
+        <li><a href="https://www.koenigsegg.com/lst" rel="noopener">Light Speed Transmission</a><span class="site-footer__where">koenigsegg.com</span></li>
+        <li><a href="https://news.cision.com/koenigsegg/r/all-new-koenigsegg-jesko-announced-at-geneva-2019,c2881595" rel="noopener">All-New Koenigsegg Jesko announced at Geneva 2019</a><span class="site-footer__where">Koenigsegg press release, Cision, 5 March 2019</span></li>
+      </ul>
     </div>
-    <div class="closing__links">
-      <div class="grid">
-        <div class="span-6 stack-4">
-          <a class="nav__logo" href="#top">Jesko Absolut</a>
-          <p class="footer__note">An unofficial, speculative redesign concept. It is not affiliated with, sponsored by or endorsed by Koenigsegg Automotive AB.</p>
-        </div>
-        <div class="span-3 start-7 footer__col"><h3>Machine</h3><ul><li><a href="#machine">Specifications</a></li><li><a href="#top">Overview</a></li></ul></div>
-        <div class="span-3 start-10 footer__col"><h3>Sources</h3><ul><li><a href="https://www.koenigsegg.com/model/jesko-absolut" rel="noopener">Model page</a></li><li><a href="https://www.koenigsegg.com/technical-specifications-jesko-absolut" rel="noopener">Technical data</a></li></ul></div>
-      </div>
-      <div class="footer__legal">
-        <span>&copy; 2026 Beyond the Machine concept. Koenigsegg and Jesko are trademarks of Koenigsegg Automotive AB.</span>
-        <a class="credits" href="/credits.html">3D model credits</a>
-      </div>
+    <div class="footer__legal site-footer__legal">
+      <span>&copy; 2026 Beyond the Machine concept. Koenigsegg and Jesko are trademarks of Koenigsegg Automotive AB.</span>
+      <a class="credits" href="/credits.html">3D model credits</a>
     </div>
   </div>
 </footer>

@@ -74,6 +74,18 @@ export function createLighting({ scene, renderer, box, accent, reducedMotion, ro
   scene.add(glow);
   let silhouette = 0;
 
+  // the story's light sweep (setSweep, Chapter VI), off everywhere else: one soft point light on the
+  // camera's side of the car that travels round it from ahead of the nose to behind the tail, so its
+  // highlight runs along the body like a light passing a parked car at the end of a film. It is in the
+  // scene from the start at zero, as the silhouette light is: adding it later would recompile every
+  // shader. Placed in the camera's frame (place()), so it suits any car and any heading.
+  const sweep = new THREE.PointLight(0xf4f8fc, 0, size.length() * 1.6, 2);
+  scene.add(sweep);
+  const sweepState = { t: 0, level: 0 };
+  const SWEEP_ARC = 75 * DEG; // from this far ahead of the camera's line to this far behind it
+  const sweepReach = Math.max(size.x, size.z) * 0.62;
+  const sweepPeak = 2.6 * sweepReach * sweepReach * 2.2; // about the key's brightness where it lands
+
   // the car's own lamps (tail lights and the like: its emissive materials), dimmed with the studio light
   // by setKey; their intensity only, so no shader changes
   const lamps = [];
@@ -97,6 +109,9 @@ export function createLighting({ scene, renderer, box, accent, reducedMotion, ro
     rim.position.setFromSphericalCoords(reach, 78 * DEG, azimuth + Math.PI - kx * 0.5);
     // high and behind, a little to the side: it grazes the roof and the shoulders the camera sees edge-on
     roof.position.setFromSphericalCoords(reach, 28 * DEG, azimuth + Math.PI + 25 * DEG);
+    // the sweep: a little above the beltline, between the camera and the car, travelling across the frame
+    sweep.position.setFromSphericalCoords(sweepReach, 62 * DEG, azimuth + SWEEP_ARC * (1 - 2 * sweepState.t));
+    sweep.position.y += size.y * 0.15;
   }
 
   return {
@@ -135,6 +150,17 @@ export function createLighting({ scene, renderer, box, accent, reducedMotion, ro
       silhouette = k;
       roof.intensity = 3.2 * k;
       glow.material.opacity = 0.7 * k;
+      return true;
+    },
+    // the story's light sweep: t 0..1 how far it has travelled across the frame, level 0..1 how bright it
+    // is (0 = off, as in the hero). Brightness and position only, so no shader is recompiled. Returns
+    // true when it changed, so the caller draws a frame (the position is applied in update()).
+    setSweep(t, level) {
+      const tt = Math.min(1, Math.max(0, t)), k = Math.min(1, Math.max(0, level));
+      if (Math.abs(tt - sweepState.t) < 1e-4 && Math.abs(k - sweepState.level) < 1e-4) return false;
+      sweepState.t = tt;
+      sweepState.level = k;
+      sweep.intensity = sweepPeak * k;
       return true;
     },
     // after a context restore. The old reflection lived only in the lost context, so it is dropped, not

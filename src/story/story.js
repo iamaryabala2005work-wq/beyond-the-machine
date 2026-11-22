@@ -12,9 +12,13 @@
 // visitor left it. Moving a canvas keeps its WebGL context, so the page never holds a second one. While
 // the story has the car, the hero's background light holds still (stage.js).
 //
-// Each chapter's progress p runs 0..1 while its frame is pinned, and its entry e runs 0..1 while it rises
-// into the screen. Both are written to the chapter (--p, --e: the CSS reveals read them) and p is handed
-// to the chapter's script for what CSS cannot do (a count, the camera).
+// Each chapter's progress p runs 0..1 while its frame is pinned, its entry e runs 0..1 while it rises
+// into the screen, and its exit x runs 0..1 while its frame scrolls off the top after p reaches 1. All
+// three are written to the chapter (--p, --e, --x: the CSS reveals read them) and p is handed to the
+// chapter's script for what CSS cannot do (a count, the camera).
+//
+// The last chapter (VI, Close) ends the story: once it has scrolled by, the stage's sticky box ends with
+// #story and the car scrolls up and away with the last frame; off screen, the viewer draws nothing.
 //
 // The stage is never empty. Until the live car is shown there, it shows stills of the chapter's car
 // (scripts/render-posters.mjs), framed and lit as the chapter frames and lights it. When the canvas moves
@@ -44,9 +48,11 @@
 // fades), the words fade in over 150 ms at their thresholds, and numbers show their final value.
 import { createPower } from './chapters/power.js';
 import { createYours } from './chapters/yours.js';
+import { createClose } from './chapters/close.js';
 
-const CHAPTERS = { power: createPower, yours: createYours };
+const CHAPTERS = { power: createPower, yours: createYours, close: createClose };
 const SHOT_AT = 0.5;      // a chapter takes the car once it is this far into the screen (its entry)
+const ARRIVED = 0.98;     // its frame has landed (data-arrived): words that must not cross the car come in then
 const FADE_MS = 420;      // the canvas's fade out before a reshoot (story.css: 400 ms)
 const LEAVE_SLACK = 24;   // px above the handoff point before the car goes back to the hero (no flicker at the edge)
 const SMOOTH = 0.16;      // s: the camera spring's smoothing time (critically damped; ~95% there in 3x this)
@@ -64,7 +70,7 @@ export function initStory() {
   const chapters = [...story.querySelectorAll('[data-chapter]')]
     .map((el) => {
       const make = CHAPTERS[el.dataset.chapter];
-      return make ? { el, name: el.dataset.chapter, frame: el.querySelector('.chapter__frame') ?? el, top: 0, span: 1, p: -1, e: -1, impl: make(el, { stage: stageEl }) } : null;
+      return make ? { el, name: el.dataset.chapter, frame: el.querySelector('.chapter__frame') ?? el, top: 0, span: 1, p: -1, e: -1, x: -1, impl: make(el, { stage: stageEl }) } : null;
     })
     .filter(Boolean);
   if (!chapters.length) return;
@@ -147,6 +153,7 @@ export function initStory() {
     viewer.setMode('story'); // a hands-on chapter's turn mode would hold the next pose to its height
     shot = c;
     camChapter = c; camP = c.p; camV = 0; camAt = now;
+    viewer.setSweep?.(0, 0); // Chapter VI's light sweep is its own: off for every other shot
     c.impl.camera(viewer, reduced ? 1 : c.p, { reduced, fresh: true });
     setLv(c.impl.level?.(c.p, { reduced }) ?? 1);
   }
@@ -160,6 +167,7 @@ export function initStory() {
     viewer.setFrameShift(null);
     viewer.setKey(1);
     viewer.setSilhouette(0);
+    viewer.setSweep?.(0, 0);
     viewer.setMode('story'); // out of a hands-on chapter's turn mode, so the hero's camera is put back whole
     viewer.setMode('orbit');
     viewer.restore(snap);
@@ -186,6 +194,7 @@ export function initStory() {
       c.span = Math.max(1, c.el.offsetHeight - c.frame.offsetHeight); // the scroll distance the frame stays pinned
       c.p = -1; // force a fresh update
       c.e = -1;
+      c.x = -1;
       c.impl.measure?.();
     }
   }
@@ -226,7 +235,10 @@ export function initStory() {
       // entry: 0 while the chapter's top is a screen below, 1 once it reaches the top of the screen
       const e = Math.min(1, Math.max(0, (y - (c.top - vh)) / vh));
       if (e >= SHOT_AT) want = c;
-      if (e !== c.e) { c.e = e; c.el.style.setProperty('--e', e.toFixed(4)); c.el.toggleAttribute('data-entered', e >= 0.5); }
+      if (e !== c.e) { c.e = e; c.el.style.setProperty('--e', e.toFixed(4)); c.el.toggleAttribute('data-entered', e >= 0.5); c.el.toggleAttribute('data-arrived', e >= ARRIVED); }
+      // exit: 0 until the frame lets go, 1 once it has scrolled a screen up
+      const x = Math.min(1, Math.max(0, (y - c.top - c.span) / vh));
+      if (x !== c.x) { c.x = x; c.el.style.setProperty('--x', x.toFixed(4)); }
       if (p === c.p) continue;
       c.p = p;
       c.el.style.setProperty('--p', p.toFixed(4));

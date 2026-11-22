@@ -371,24 +371,29 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
     setFrameShift(v, x = 0) { if (frameShift === v && frameShiftX === x) return; frameShift = v; frameShiftX = x; applyView(); },
     // the story's silhouette light, 0..1: a cool rim along the roofline and a soft glow on the floor (0 = off, as in the hero)
     setSilhouette(level) { if (lighting?.setSilhouette(level)) invalidate(); },
+    // the story's light sweep (Chapter VI): t 0..1 across the frame, level 0..1 (0 = off, as in the hero)
+    setSweep(t = 0, level = 0) { if (lighting?.setSweep(t, level)) invalidate(); },
     // ---- paint (Chapter V): the variants as the manifest lists them ({ id, label, color }), the one
     // shown now, and a change to another (eased over PAINT_MS; instant under reduced motion or on request)
     paints: () => paintVariants(manifest ?? {}).map((v) => ({ id: v.id, label: v.label, color: v.set.color, default: Boolean(v.default) })),
     paint: () => paintId,
     setPaint,
     // the zoom and frame shift that keep the car inside rect (fractions of the canvas) at every heading,
-    // seen from the shot's height (fit.js). Cached: it is worked out again only when the canvas's size,
-    // the shot or the rect changes.
-    fitShot(shot, rect) {
+    // seen from the shot's height (fit.js); steps: 1 fits the shot's own heading alone (a car that is not
+    // turned). Cached per caller: it is worked out again only when the canvas's size, the shot or the
+    // rect changes.
+    fitShot(shot, rect, { steps = 16 } = {}) {
       if (!rig) return null;
-      const key = `${viewW}x${viewH} ${rig.fitDistance.toFixed(5)} ${JSON.stringify(shot)} ${rect.left.toFixed(4)} ${rect.top.toFixed(4)} ${rect.right.toFixed(4)} ${rect.bottom.toFixed(4)}`;
-      if (fitCache?.key === key) return fitCache.fit;
+      const key = `${viewW}x${viewH} ${rig.fitDistance.toFixed(5)} ${JSON.stringify(shot)} ${steps} ${rect.left.toFixed(4)} ${rect.top.toFixed(4)} ${rect.right.toFixed(4)} ${rect.bottom.toFixed(4)}`;
+      fitCache ??= new Map();
+      if (fitCache.has(key)) return fitCache.get(key);
       const cam = camera.clone();
       cam.clearViewOffset();
       cam.aspect = viewW / viewH;
       cam.updateProjectionMatrix();
-      const fit = fitTurntable({ cam, place: rig.placeAt, points: model.points, shot, rect });
-      fitCache = { key, fit };
+      const fit = fitTurntable({ cam, place: rig.placeAt, points: model.points, shot, rect, steps });
+      if (fitCache.size > 16) fitCache.clear();
+      fitCache.set(key, fit);
       return fit;
     },
     // f() after the canvas has taken a new size. Returns a function that unsubscribes.
@@ -416,6 +421,8 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
       // readPixels counts rows from the bottom
       return { left: x0 / r, right: (x1 + 1) / r, top: (h - 1 - y1) / r, bottom: (h - y0) / r };
     },
+    // for tests: how many frames have been drawn since the viewer was made
+    frames: () => renders,
     // for tests: how many shader programs three.js holds (a recompile adds one)
     programs: () => renderer.info.programs?.length ?? 0,
     // f(true) when the car starts moving, f(false) when it comes to rest; called once at once with the

@@ -25,19 +25,27 @@
   #machine .grid.fill { flex: none; min-height: auto; }
 }
 
-.footer__note { margin: 0; color: var(--p-muted); max-width: 52ch; line-height: 1.6; }
+/* the footer: small, readable and calm. The concept tag, the disclaimer, the sources the chapters quote,
+   then the trademark line and the model credits. As tall as what it holds. */
+.site-footer { padding-block: var(--s-8) var(--s-6); border-top: 1px solid var(--hud-line); background: var(--p-bg); }
+.site-footer__in { display: grid; gap: var(--s-5); }
+.site-footer__tag { margin: 0; font-size: 13px; letter-spacing: .04em; }
+.site-footer__note { margin: 0; max-width: 60ch; font-size: 15px; line-height: 1.6; color: var(--p-ink); }
+.site-footer__sources { margin-top: var(--s-3); }
+.footer .site-footer__h { margin: 0 0 var(--s-3); font: 400 12px/1.4 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--p-muted); }
+.site-footer__sources ul { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s-2); font-size: 14px; line-height: 1.5; }
+.site-footer__sources ul { gap: var(--s-3); }
+/* each source: its title, and under it where it is published */
+.site-footer__sources li { display: grid; gap: 2px; }
+.site-footer__where { font-size: 13px; }
+.site-footer__sources a { color: var(--p-ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in oklab, var(--p-muted) 50%, transparent); }
+.site-footer__sources a:hover { color: var(--optic); }
+.site-footer__where { color: var(--p-muted); }
+.footer .site-footer__legal { margin-top: var(--s-4); font-size: 13px; line-height: 1.5; }
+.site-footer__legal .credits { color: var(--p-ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in oklab, var(--p-muted) 50%, transparent); }
+.site-footer :is(a):focus-visible { outline: 2px solid var(--optic); outline-offset: 2px; }
 
-/* "Unofficial concept" is said in the close (the tag over its heading) and the footer's note, not in the bar */
-/* the close and the footer: at least one screen, and taller when what they hold needs it. The kit fixes
-   footer.closing at exactly one screen from 1280px, with the close in a minmax(0, 1fr) row: on a window
-   shorter than its content the close's button was squashed and ran into the footer's links. */
-footer.closing { height: auto; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; }
-footer.closing > .wrap { flex: 1 0 auto; height: auto; grid-template-rows: minmax(min-content, 1fr) auto; }
-.closing__cta > .btn { flex: none; }
-.closing .section-head > .closing__concept { margin: 0 0 var(--s-4); font-size: 13px; letter-spacing: .04em; color: var(--p-muted); }
-
-/* phones have no room for the logo, the tag and the nav's button: the main action stays in the hero and
-   the close */
+/* phones have no room for the logo, the tag and the nav's button: the main action stays in the hero */
 @media (max-width: 639px) { .nav.nav--split:not(.is-open) .nav__actions { display: none; } }
 
 @media (max-width: 639px) {

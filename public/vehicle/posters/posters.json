@@ -1,6 +1,6 @@
 {
   "$comment": "Written by scripts/render-posters.mjs. \"inputs\" is the hash of what the posters are made from (scripts/posters/stamp.mjs); vite build re-renders when it no longer matches.",
-  "inputs": "a217fe752f5a8d66",
+  "inputs": "df55dd92caa9e404",
   "manifest": "/vehicle/models/car-concept/manifest.json",
   "files": {
     "/vehicle/posters/hero-960.webp": 39844,
@@ -10,8 +10,26 @@
     "/vehicle/posters/detail-1400.webp": 59072,
     "/vehicle/posters/power-stack-lit.webp": 36290,
     "/vehicle/posters/power-split-lit.webp": 67260,
-    "/vehicle/posters/yours-800.webp": 31990,
-    "/vehicle/posters/yours-1600.webp": 83260,
+    "/vehicle/posters/yours-midnight-800.webp": 31990,
+    "/vehicle/posters/yours-midnight-1600.webp": 83260,
+    "/vehicle/posters/yours-graphite-800.webp": 31710,
+    "/vehicle/posters/yours-graphite-1600.webp": 83162,
+    "/vehicle/posters/yours-ice-800.webp": 32260,
+    "/vehicle/posters/yours-ice-1600.webp": 83580,
+    "/vehicle/posters/yours-bone-800.webp": 31970,
+    "/vehicle/posters/yours-bone-1600.webp": 80974,
+    "/vehicle/posters/yours-ember-800.webp": 34094,
+    "/vehicle/posters/yours-ember-1600.webp": 88834,
+    "/vehicle/posters/close-midnight-800.webp": 28294,
+    "/vehicle/posters/close-midnight-1600.webp": 75672,
+    "/vehicle/posters/close-graphite-800.webp": 28192,
+    "/vehicle/posters/close-graphite-1600.webp": 76014,
+    "/vehicle/posters/close-ice-800.webp": 29306,
+    "/vehicle/posters/close-ice-1600.webp": 79738,
+    "/vehicle/posters/close-bone-800.webp": 28378,
+    "/vehicle/posters/close-bone-1600.webp": 73594,
+    "/vehicle/posters/close-ember-800.webp": 30746,
+    "/vehicle/posters/close-ember-1600.webp": 82402,
     "/share.jpg": 38465
   }
 }

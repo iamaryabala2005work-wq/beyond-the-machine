@@ -4,28 +4,25 @@
 // swatches     one outlined pill per paint in the manifest (variants.paint: a dot and a name), arriving
 //              over p 0..0.2 (CSS). Choosing one repaints the live car over 600 ms (viewer.setPaint:
 //              uniform values only, so no shader recompiles) and the mono readout names the finish. The
-//              choice is kept in localStorage and put back on the car when it next enters the story.
+//              choice is kept (paint.js) and put back on the car when it next enters the story, and the
+//              close (Chapter VI) shows the car in it.
 // car          the manifest's "yours" shot, fitted into the band between the words and the swatches so
 //              that no heading of the car ever reaches either (fit.js); the band is measured on resize.
 //              It turns TURN degrees across the chapter (yours-look.js), eased by story.js's spring, and a
 //              drag or a sideways swipe turns it too (the rig's turn mode): the page's turn adds to the
 //              visitor's. The pose is set while the canvas is hidden (story.js), never swung into view.
+// still        the stage's stand-in for the live car (story.js) is a render of this shot in the paint the
+//              live car wears (one still per paint, paint.js), so a change of chapter never shows the car
+//              in another colour.
 // no 3D        the swatches stay as labelled chips, not buttons, with the note "Preview needs the 3D
-//              model". The still is never tinted: it would show a car that is not there.
+//              model", and the still keeps the default paint: there is no live car to have chosen.
 // Reduced motion: no turntable, and a paint change is instant.
 import { turnAt, LIGHT, STILL_PAD } from './yours-look.js';
+import { paintChoice, showStill, placeStill } from '../paint.js';
 
 const DEG = Math.PI / 180;
-const STORE = 'btm.paint';
 const GAP = 16;     // px kept clear between the car and the words above it
 const GAP_FOOT = 28; // and above the finish and the swatches (the car's ground shadow reaches past its wheels)
-
-function saved() {
-  try { return localStorage.getItem(STORE); } catch { return null; }
-}
-function save(id) {
-  try { localStorage.setItem(STORE, id); } catch { /* private mode, storage off: the choice lasts the visit */ }
-}
 
 export function createYours(el, { stage }) {
   const frame = el.querySelector('.chapter__frame');
@@ -47,7 +44,7 @@ export function createYours(el, { stage }) {
   function render(list) {
     if (!list.length) return;
     paints = list;
-    current ??= (list.find((v) => v.id === saved()) ?? list.find((v) => v.default) ?? list[0]).id;
+    current ??= (list.find((v) => v.id === paintChoice.get()) ?? list.find((v) => v.default) ?? list[0]).id;
     group.replaceChildren(...list.map((v) => {
       const b = document.createElement('button');
       b.type = 'button';
@@ -73,13 +70,16 @@ export function createYours(el, { stage }) {
     el.toggleAttribute('data-preview', live);
     const v = paints.find((x) => x.id === current);
     if (v && readout.textContent !== v.label) readout.textContent = v.label;
+    // the still wears the live car's paint; with no live car, the default
+    const shown = live ? current : (paints.find((x) => x.default) ?? paints[0])?.id;
+    showStill(still, shown);
   }
   group.addEventListener('click', (e) => {
     const b = e.target.closest('[data-paint]');
     if (!b || b.disabled || !viewer) return;
     current = b.dataset.paint;
     viewer.setPaint(current, { instant: reduced });
-    save(current);
+    paintChoice.set(current);
     sync();
   });
   // with no live car, the list still comes from the manifest (the markup's copy is the no-script one)
@@ -102,17 +102,8 @@ export function createYours(el, { stage }) {
     const top = h.bottom - f.top + GAP;
     const bottom = c.top - f.top - GAP_FOOT;
     rect = { left: left / W, right: right / W, top: top / H, bottom: Math.max(top + 1, bottom) / H };
-    placeStill(left, top, right, Math.max(top + 1, bottom));
-  }
-  // the still, fitted into the band as the live car is (its picture is the fitted box plus STILL_PAD)
-  function placeStill(l, t, r, b) {
-    if (!still) return;
-    const iw = Number(still.getAttribute('width')) || 16, ih = Number(still.getAttribute('height')) || 9;
-    const k = Math.min((r - l) / iw, (b - t) / ih); // the box has the picture's shape
-    const w = iw * k, h = ih * k;
-    const bx = l + (r - l - w) / 2, by = t + (b - t - h) / 2;
-    const pw = w * (1 + 2 * STILL_PAD), ph = h * (1 + 2 * STILL_PAD);
-    Object.assign(still.style, { left: `${bx - w * STILL_PAD}px`, top: `${by - h * STILL_PAD}px`, width: `${pw}px`, height: `${ph}px` });
+    // the still, fitted into the band as the live car is (its picture is the fitted box plus STILL_PAD)
+    placeStill(still, left, top, right, Math.max(top + 1, bottom), STILL_PAD);
   }
 
   return {
@@ -133,7 +124,7 @@ export function createYours(el, { stage }) {
     // the car has moved into the story: the visitor's earlier choice goes back on, unseen (the canvas is
     // still hidden)
     enter(handle) {
-      const id = saved();
+      const id = paintChoice.get();
       if (id && handle.paints().some((v) => v.id === id)) { handle.setPaint(id, { instant: true }); current = id; }
       else current = handle.paint();
       sync();
@@ -153,6 +144,7 @@ export function createYours(el, { stage }) {
         v.setFrameShift(fit.y, fit.x);
         v.setKey(LIGHT.key);
         v.setSilhouette(LIGHT.silhouette);
+        v.setSweep(0, 0);
         const shot = { ...base, azimuth, zoom: fit.zoom };
         v.pose(shot, shot, 0);
         v.setMode('turn');
