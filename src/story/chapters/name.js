@@ -2,8 +2,9 @@
 //
 // entry        the mark comes in as the chapter rises (CSS, from --e). The stage rises with the frame, so the
 //              car arrives already in place under the words and nothing crosses it.
-// word         JESKO, letter by letter over p 0.04..0.44: each letter fades and rises (CSS, from --p; a
-//              blur clears on desktop only, none on the mobile tier). Scrolling back takes them away again.
+// word         JESKO, letter by letter: J with the mark as the chapter rises, then E, S, K, O over p
+//              0.03..0.42 (name-look.js); each letter fades and rises (CSS; a blur clears on desktop only,
+//              none on the mobile tier). Scrolling back takes them away again.
 // lines        three short lines, one at a time over p 0.48..0.76, then the mono date mark at 0.8. The words
 //              are Koenigsegg's own press release's, closely paraphrased (cited at the foot).
 // car          the manifest's "name" shot, a low front view facing the visitor, fitted into the free band
@@ -13,7 +14,9 @@
 //              spring; frames are drawn only while it moves. Posed while the canvas is hidden (story.js),
 //              never swung into view.
 // light        the only warm-lit chapter: an amber key, the rest of the car and the scene in deep shadow
-//              (lighting.js setWarmth). Colour and brightness only: no light added or removed, no shader
+//              (lighting.js setWarmth). The chapter starts fully black (every light and the car's lamps at
+//              0, the canvas transparent) and the warm light rises in step with the letters, full as the O
+//              completes (name-look.js levelAt), eased by story.js's spring. Colour and brightness only: no light added or removed, no shader
 //              recompiles. As the frame lets go, the car fades to the page before the next chapter's words
 //              rise to where it sits (presence(), story.js --lx). Coming in, it waits until every picture
 //              of the car above the story (the hero's stage, the specifications' close view) has left the
@@ -22,7 +25,7 @@
 //              shot in the paint the live car wears (default Midnight), placed and scaled with the push-in
 //              exactly where the live car lands.
 // Reduced motion: the whole word, all the lines and the lit car, at the end of the push-in; nothing moves.
-import { LIGHT, STILL_PAD, PUSH, pushAt, presenceAt } from './name-look.js';
+import { LIGHT, STILL_PAD, PUSH, pushAt, presenceAt, levelAt } from './name-look.js';
 import { paintChoice, showStill, placeStill } from '../paint.js';
 
 const GAP = 28;        // px kept clear between the car and the words above it (stacked) or beside it (split)
@@ -111,7 +114,9 @@ export function createName(el, { stage }) {
   return {
     update(p) { scaleStill(p); },
     measure,
-    level: () => 1,
+    // how far the warm light is up at progress p: black at the start, full once the word is spelled
+    // (story.js eases it through its spring and shows it on the stills as --lp). Reduced motion: lit.
+    level: (p, { reduced: r }) => (r ? 1 : levelAt(p)),
     // how much of the car is there (story.js writes it to the stage as --lx): once the pictures above the
     // story have gone, and until the frame lets go. Reduced motion: cuts, no fades, at the same points.
     presence: (x, { reduced: r }) => arrival(r) * (r ? (x < 0.15 ? 1 : 0) : presenceAt(x)),
@@ -126,7 +131,8 @@ export function createName(el, { stage }) {
       const t = r ? 1 : Math.min(1, Math.max(0, p));
       const zoom = 1 / (1 / a.zoom + (1 / b.zoom - 1 / a.zoom) * t);
       v.setFrameShift(a.y + (b.y - a.y) * t, a.x + (b.x - a.x) * t);
-      v.setKey(LIGHT.key);
+      // the warm light, up with the word: colour stays amber at every level, only the brightness moves
+      v.setKey(LIGHT.key * (r ? 1 : levelAt(p)));
       v.setSilhouette(LIGHT.silhouette);
       v.setWarmth?.(LIGHT.warmth);
       const shot = { ...base, zoom };

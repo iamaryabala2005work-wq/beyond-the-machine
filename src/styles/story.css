@@ -39,8 +39,10 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
   .story__stage[data-shot="name"] .story__still--name, .story__stage[data-shot="power"] .story__still--power, .story__stage[data-shot="yours"] .story__still--yours,
   .story__stage[data-shot="close"] .story__still--close { transition: opacity 260ms var(--ease-settle) 200ms; }
 }
-/* Chapter I's still follows the push-in by scale (name.js), about its own centre */
+/* Chapter I's still follows the push-in by scale (name.js), about its own centre, and the warm light's
+   rise by --lp (it is the lit end: the start is the black page) */
 .story__still--name { transform-origin: 50% 50%; }
+.story__stage[data-shot="name"] .story__still--name { opacity: var(--lp, 1); }
 /* and on the live car (--lv, story.js): its unlit pixels are black, a shade off the page's own ground, so
    it is faded out entirely at the start of the reveal and fully there once a little light is up. The
    stand-in tag describes the car, so it comes with it. */
@@ -104,24 +106,31 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
 .name__line:nth-child(3) { margin-top: var(--s-3); } /* the first two are one sentence */
 .name__line:nth-child(3) { color: var(--p-muted); }
 .name__date { margin: var(--s-5) 0 0; display: flex; align-items: center; gap: var(--s-3);
-  font: 400 13px/1 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--p-muted); }
+  font: 500 14px/1 var(--font-mono); letter-spacing: .14em; text-transform: uppercase;
+  color: color-mix(in oklab, var(--p-ink) 78%, var(--p-muted)); }
 .name__sep { color: var(--concept-dot); }
 .chapter--name .chapter__source a { pointer-events: auto; }
 
 /* reveals. The mark comes in with the chapter as it rises (--e). Each letter of the word fades and rises
-   in turn over p 0.04..0.44 (--p); on desktop a 8px blur clears with it, on the mobile tier (as
+   in turn (J with the mark, from --e; E to O over p 0.03..0.42, from --p); on desktop a 8px blur clears with it, on the mobile tier (as
    src/vehicle/gate.js sorts it) none. The lines follow one at a time over 0.48..0.76, the date at 0.8. */
 .chapter--name .chapter__mark { --k: clamp(0, (var(--e, 1) - .35) / .45, 1); opacity: var(--k); }
-.name__letter { --k: clamp(0, (var(--p, 1) - .04 - var(--i) * .07) / .12, 1);
+/* J with the mark, as the chapter rises; E, S, K, O over p 0.03..0.42, 0.09 apart, 0.12 each
+   (name-look.js: the warm light rises with them) */
+.name__letter { --k: clamp(0, (var(--p, 1) - .03 - (var(--i) - 1) * .09) / .12, 1);
   opacity: var(--k); translate: 0 calc((1 - var(--k)) * .16em); filter: blur(calc((1 - var(--k)) * 8px)); }
+.name__letter:first-child { --k: clamp(0, (var(--e, 1) - .35) / .45, 1); }
 .name__line { --k: clamp(0, (var(--p, 1) - .48 - var(--i) * .1) / .08, 1); opacity: var(--k); translate: 0 calc((1 - var(--k)) * 8px); }
 .name__date { --k: clamp(0, (var(--p, 1) - .8) / .08, 1); opacity: var(--k); translate: 0 calc((1 - var(--k)) * 8px); }
+/* the source comes with the first line about him, so the chapter opens on the mark and the J alone */
+.chapter.chapter--name .chapter__source { --k: clamp(0, (var(--p, 1) - .48) / .08, 1); opacity: calc(var(--gone) * var(--k)); }
 @media (max-width: 639px), (pointer: coarse) {
   .name__letter { filter: none; }
 }
 /* reduced motion: the whole word, every line and the date, at once; nothing moves */
 @media (prefers-reduced-motion: reduce) {
   .chapter--name :is(.chapter__mark, .name__letter, .name__line, .name__date) { opacity: 1; translate: none; filter: none; }
+  .chapter.chapter--name .chapter__source { opacity: var(--gone); }
 }
 
 /* from 900px the words keep a left column; the car takes the right (name.js) */

@@ -1,6 +1,6 @@
 {
   "$comment": "Written by scripts/render-posters.mjs. \"inputs\" is the hash of what the posters are made from (scripts/posters/stamp.mjs); vite build re-renders when it no longer matches.",
-  "inputs": "58871a14e4a994d6",
+  "inputs": "46b06130783c1dcf",
   "manifest": "/vehicle/models/car-concept/manifest.json",
   "files": {
     "/vehicle/posters/hero-960.webp": 39844,
