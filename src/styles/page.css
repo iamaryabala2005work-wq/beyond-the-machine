@@ -15,18 +15,35 @@
 .spec__label { margin: 0; color: var(--p-ink); font-size: 16px; line-height: 1.5; max-width: 30ch; }
 .machine__sources { grid-column: 1 / -1; margin: 0; font-size: 14px; color: var(--p-muted); }
 .machine__detail { background: none; border: 0; }
-.machine__detail .frame__img { object-fit: contain; object-position: 50% 0; }
+/* the close view is as tall as its picture at every width (not stretched to the row or the screen) */
+.grid.fill > .machine__detail, .machine__detail { width: 100%; height: auto; flex: none; min-height: 0; align-self: start; aspect-ratio: 1400 / 934; padding: 0; }
+.machine__detail::before { content: none; }
+.machine__detail .frame__img { object-fit: contain; }
+@media (max-width: 1023px) {
+  /* stacked, the section is as tall as what it holds (the kit's two-screen minimum left a black band) */
+  #machine.section { min-height: 0; }
+  #machine .grid.fill { flex: none; min-height: auto; }
+}
 
 .footer__note { margin: 0; color: var(--p-muted); max-width: 52ch; line-height: 1.6; }
 
-/* the nav-split grid starts at 1024; below it the logo takes the left line and the tag steps out */
-@media (max-width: 1023px) { .nav--split .nav__links { display: none; } }
+/* "Unofficial concept" is said in the close (the tag over its heading) and the footer's note, not in the bar */
+/* the close and the footer: at least one screen, and taller when what they hold needs it. The kit fixes
+   footer.closing at exactly one screen from 1280px, with the close in a minmax(0, 1fr) row: on a window
+   shorter than its content the close's button was squashed and ran into the footer's links. */
+footer.closing { height: auto; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; }
+footer.closing > .wrap { flex: 1 0 auto; height: auto; grid-template-rows: minmax(min-content, 1fr) auto; }
+.closing__cta > .btn { flex: none; }
+.closing .section-head > .closing__concept { margin: 0 0 var(--s-4); font-size: 13px; letter-spacing: .04em; color: var(--p-muted); }
 
-/* the narrowest phones (320) have no room for the logo and the nav's button: the main action stays in the
-   hero and the close */
-@media (max-width: 399px) { .nav.nav--split:not(.is-open) .nav__actions { display: none; } }
+/* phones have no room for the logo, the tag and the nav's button: the main action stays in the hero and
+   the close */
+@media (max-width: 639px) { .nav.nav--split:not(.is-open) .nav__actions { display: none; } }
 
 @media (max-width: 639px) {
   .machine__figures { gap: var(--s-6) 12px; }
   .spec__label { font-size: 16px; }
 }
+
+/* the specifications' close view is a render of the stand-in model, and says so */
+.machine__detail > .machine__standin { position: absolute; left: 12px; bottom: 12px; z-index: 1; pointer-events: none; }

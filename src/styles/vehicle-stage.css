@@ -40,7 +40,7 @@
 .vehicle-stage__gl:focus-visible { outline: 2px solid var(--p-action); outline-offset: -2px; }
 [data-vehicle-mode="live"] .vehicle-stage__gl { opacity: 1; }
 [data-vehicle-mode="live"] > .vehicle-stage__poster { opacity: 0; visibility: hidden; }
-/* the scan is drawn against the photograph's outline; with the 3D car it waits for its own pass */
+/* the scan is drawn against the poster render's outline; with the 3D car it waits for its own pass */
 [data-vehicle-mode="live"] > .vehicle-stage__scan { display: none; }
 /* The hand-off from the poster to the car, on first load and after a restore: a cross-fade with no dim
    moment. The canvas (under the poster) is fully in within 250ms while the poster still covers it, and only
@@ -100,8 +100,8 @@
 .hero__stage.vehicle-stage > .vehicle-stage__scan { inset: 0; z-index: 4; pointer-events: none; padding: 5% 0 4%; background-clip: content-box;
   background-image: linear-gradient(90deg, transparent 0 calc(var(--scan) - 7%), var(--optic-faint) calc(var(--scan) - 1.2%),
     color-mix(in oklab, var(--optic) 70%, white) var(--scan), transparent calc(var(--scan) + .25%));
-  -webkit-mask: url(/vehicle/jesko-absolut-1600.webp) center / contain no-repeat content-box;
-          mask: url(/vehicle/jesko-absolut-1600.webp) center / contain no-repeat content-box;
+  -webkit-mask: url(/vehicle/posters/hero-1600.webp) center / contain no-repeat content-box;
+          mask: url(/vehicle/posters/hero-1600.webp) center / contain no-repeat content-box;
   mix-blend-mode: screen; opacity: 0; --scan: -10%; }
 @property --scan { syntax: '<percentage>'; inherits: false; initial-value: -10%; }
 @media (prefers-reduced-motion: no-preference) and (min-width: 640px) {

@@ -8,7 +8,7 @@ export function bindStageUI(stage) {
   const tag = stage.querySelector('[data-vehicle-standin]');
   const label = status?.firstElementChild;
   const loadingText = label?.textContent ?? '';
-  const FAILED_TEXT = '3D view unavailable · showing the photo';
+  const FAILED_TEXT = '3D view unavailable · showing a render';
   let shown = 0;
   let standIn = false;
 

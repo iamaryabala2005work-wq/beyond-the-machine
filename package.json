@@ -8,12 +8,13 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "vehicle": "node scripts/build-vehicle.mjs",
-    "model": "node scripts/build-model.mjs assets-src/models/car-concept.glb public/vehicle/models/car-concept"
+    "model": "node scripts/build-model.mjs assets-src/models/car-concept.glb public/vehicle/models/car-concept && node scripts/render-posters.mjs",
+    "posters": "node scripts/render-posters.mjs"
   },
   "devDependencies": {
     "@gltf-transform/cli": "^4.5.1",
     "meshoptimizer": "^1.2.0",
+    "playwright-core": "^1.65.1",
     "sharp": "^0.35.5",
     "vite": "^6.4.6"
   },

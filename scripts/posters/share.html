@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Share card</title>
+<!-- The link-preview card (public/share.jpg), 1200 x 630, captured by scripts/render-posters.mjs from the
+     freshly rendered hero poster. The site's palette and type; no maker's marks, the concept label kept. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@500&family=Geist+Mono:wght@400&display=block" rel="stylesheet">
+<style>
+  html, body { margin: 0; }
+  body { width: 1200px; height: 630px; overflow: hidden; position: relative; background: #07090c; color: #e6ebf0;
+    font-family: "Geist", system-ui, sans-serif; }
+  .glow { position: absolute; inset: 0; background: radial-gradient(60% 55% at 62% 70%, rgb(127 224 238 / .08), transparent 70%); }
+  .ring { position: absolute; left: 62%; top: 80%; width: 760px; aspect-ratio: 5.4 / 1; translate: -50% -50%; border-radius: 50%;
+    border: 1px solid rgb(127 224 238 / .3); }
+  .car { position: absolute; left: 62%; top: 56%; width: 720px; translate: -50% -50%; filter: drop-shadow(0 28px 28px rgb(0 0 0 / .55)); }
+  h1 { position: absolute; left: 64px; top: 56px; margin: 0; font-weight: 500; font-size: 64px; line-height: 1; letter-spacing: -0.045em;
+    text-transform: uppercase; }
+  .tag { position: absolute; left: 64px; bottom: 52px; display: flex; gap: 10px; align-items: center;
+    font: 400 18px/1 "Geist Mono", ui-monospace, monospace; color: #8c97a3; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #e2b25c; }
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="ring"></div>
+  <img class="car" id="car" alt="">
+  <h1>Beyond the<br>machine.</h1>
+  <p class="tag">Unofficial concept<span class="dot"></span></p>
+  <script>
+    // scripts/render-posters.mjs hands the hero render over as a data URL
+    window.setCar = (src) => { const car = document.getElementById('car'); car.src = src; return Promise.all([document.fonts.ready, car.decode()]); };
+  </script>
+</body>
+</html>

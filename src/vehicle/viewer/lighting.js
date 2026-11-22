@@ -6,7 +6,7 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 
 const DEG = Math.PI / 180;
 
-export function createLighting({ scene, renderer, box, accent, reducedMotion }) {
+export function createLighting({ scene, renderer, box, accent, reducedMotion, root = null }) {
   // the room reflection is rendered on the GPU, so it is the one thing a lost WebGL context cannot give back
   // by itself (three.js re-uploads meshes and textures from their CPU copies): rebuild() draws it again
   let env = null;
@@ -46,6 +46,45 @@ export function createLighting({ scene, renderer, box, accent, reducedMotion }) 
   shadow.renderOrder = -1;
   scene.add(shadow);
 
+  // the story's silhouette light (setSilhouette), off in the hero: a cool light from high behind the car
+  // that draws its roofline against a dark page, and a soft cool glow on the floor under it, drawn once
+  // like the shadow and laid under it so the tyres still sit in shade
+  // both stay in the scene at zero when off: adding or hiding a light recompiles every material's shader,
+  // a stall on entering the story; an intensity of 0 costs nothing
+  const roof = new THREE.DirectionalLight(0xcfe6ff, 0);
+  scene.add(roof, roof.target);
+  const gc = document.createElement('canvas');
+  gc.width = gc.height = 128;
+  const gg = gc.getContext('2d');
+  const glowGrad = gg.createRadialGradient(64, 64, 0, 64, 64, 64);
+  glowGrad.addColorStop(0, 'rgba(150,205,230,0.55)');
+  glowGrad.addColorStop(0.45, 'rgba(120,180,210,0.2)');
+  glowGrad.addColorStop(1, 'rgba(120,180,210,0)');
+  gg.fillStyle = glowGrad;
+  gg.fillRect(0, 0, 128, 128);
+  const glowTex = new THREE.CanvasTexture(gc);
+  glowTex.colorSpace = THREE.SRGBColorSpace;
+  const glow = new THREE.Mesh(
+    new THREE.PlaneGeometry(size.x * 1.8, size.z * 1.7),
+    new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, opacity: 0, toneMapped: false }),
+  );
+  glow.rotation.x = -Math.PI / 2;
+  glow.position.y = 0.001;
+  glow.renderOrder = -2;
+  scene.add(glow);
+  let silhouette = 0;
+
+  // the car's own lamps (tail lights and the like: its emissive materials), dimmed with the studio light
+  // by setKey; their intensity only, so no shader changes
+  const lamps = [];
+  root?.traverse((o) => {
+    for (const m of [o.material].flat()) {
+      if (m && 'emissiveIntensity' in m && !lamps.some((l) => l.m === m) && (m.emissiveMap || m.emissive?.getHex())) {
+        lamps.push({ m, base: m.emissiveIntensity });
+      }
+    }
+  });
+
   // pointer in the stage, 0..1; the light eases toward it (reduced motion: it stays at rest)
   const rest = { x: 0.5, y: 0.42 };
   const goal = { ...rest };
@@ -56,6 +95,8 @@ export function createLighting({ scene, renderer, box, accent, reducedMotion }) 
     const ky = (0.5 - now.y) * 30 * DEG;
     key.position.setFromSphericalCoords(reach, (55 * DEG) - ky, azimuth - 35 * DEG + kx);
     rim.position.setFromSphericalCoords(reach, 78 * DEG, azimuth + Math.PI - kx * 0.5);
+    // high and behind, a little to the side: it grazes the roof and the shoulders the camera sees edge-on
+    roof.position.setFromSphericalCoords(reach, 28 * DEG, azimuth + Math.PI + 25 * DEG);
   }
 
   return {
@@ -73,12 +114,38 @@ export function createLighting({ scene, renderer, box, accent, reducedMotion }) 
       place(azimuth);
       return Math.abs(goal.x - now.x) + Math.abs(goal.y - now.y) > 0.002;
     },
+    // how much light falls on the car, 0..1 (1 = as in the hero). The story dims it: at 0 the key, the room
+    // reflection, the cyan rim and the car's own lamps are all off, so the car is black. The lamps come
+    // up ahead of the rest (full by a third), so the tail lights are among the first things seen.
+    // Brightness only, so no shader is recompiled. Returns true when it changed, so the caller draws a frame.
+    setKey(level) {
+      const k = Math.min(1, Math.max(0, level));
+      const keyI = 2.4 * k, envI = 0.55 * k, rimI = 1.6 * k, lamp = Math.min(1, k * 3);
+      if (Math.abs(key.intensity - keyI) < 1e-4 && Math.abs(scene.environmentIntensity - envI) < 1e-4) return false;
+      key.intensity = keyI;
+      scene.environmentIntensity = envI;
+      rim.intensity = rimI;
+      for (const l of lamps) l.m.emissiveIntensity = l.base * lamp;
+      return true;
+    },
+    // the story's silhouette light, 0..1 (see above). Returns true when it changed, so the caller draws a frame.
+    setSilhouette(level) {
+      const k = Math.min(1, Math.max(0, level));
+      if (Math.abs(k - silhouette) < 1e-3) return false;
+      silhouette = k;
+      roof.intensity = 3.2 * k;
+      glow.material.opacity = 0.7 * k;
+      return true;
+    },
     // after a context restore. The old reflection lived only in the lost context, so it is dropped, not
     // disposed (disposing would hand stale GL objects to the new context).
     rebuild: buildEnvironment,
     dispose() {
       env.dispose();
       shadowTex.dispose();
+      glowTex.dispose();
+      glow.geometry.dispose();
+      glow.material.dispose();
       shadow.geometry.dispose();
       shadow.material.dispose();
     },

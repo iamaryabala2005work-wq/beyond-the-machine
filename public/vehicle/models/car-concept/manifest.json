@@ -1,5 +1,5 @@
 {
-  "$comment": "One manifest per car. The viewer reads only this file, never the raw names in the GLB. To swap in the Jesko: run scripts/build-model.mjs on its file, write a manifest like this one beside it, and point data-vehicle-model on the hero stage at it.",
+  "$comment": "One manifest per car. The viewer reads only this file, never the raw names in the GLB. To swap in the Jesko: run scripts/build-model.mjs on its file, write a manifest like this one beside it, and point data-vehicle-model on the hero stage at it. The story (src/story) reads camera.shots by name: a shot is an azimuth and polar angle in degrees, a zoom (a multiple of the distance that fits the car; larger is farther) and an optional look-at target as fractions of the car’s box (x and z from its centre, y from the ground), with \"compact\" overrides for phone-sized screens.",
   "id": "car-concept",
   "name": "Car Concept (temporary stand-in)",
   "standIn": true,
@@ -127,6 +127,60 @@
       "polarMax": 86,
       "zoomMin": 0.8,
       "zoomMax": 1.6
+    },
+    "shots": {
+      "power": {
+        "azimuth": 150,
+        "polar": 84,
+        "zoom": 1.5,
+        "target": [
+          0,
+          0.4,
+          -0.08
+        ],
+        "compact": {
+          "zoom": 1.15
+        }
+      }
+    }
+  },
+  "posters": {
+    "$comment": "Still images rendered from this model by scripts/render-posters.mjs (npm run posters; vite build re-renders when they are out of date). Shots as in camera.shots; hero is cut out to the car, detail is framed edge to edge.",
+    "hero": {
+      "shot": {
+        "azimuth": -38,
+        "polar": 74,
+        "zoom": 1.4
+      },
+      "size": [
+        2400,
+        1354
+      ],
+      "widths": [
+        960,
+        1600,
+        2400
+      ]
+    },
+    "detail": {
+      "shot": {
+        "azimuth": -40,
+        "polar": 80,
+        "zoom": 0.4,
+        "target": [
+          -0.3,
+          0.46,
+          0.32
+        ]
+      },
+      "size": [
+        1400,
+        934
+      ],
+      "widths": [
+        800,
+        1400
+      ]
     }
   }
 }

@@ -1,0 +1,110 @@
+/* The story (src/story/story.js): chapters over one pinned stage. Native scroll only: sticky frames, no
+   snap, no smooth scrolling. Each chapter's --p (0..1 while its frame is pinned) drives its reveals; without
+   script --p is unset and every reveal falls back to shown.
+
+   Type: the display face for words, Geist Mono for chapter marks, figures, units and sources. Cyan is a
+   small accent only (focus and hover); everything else is ink or muted. */
+
+/* ---- the outlined pill: a thin ink line, no fill, mono; cyan only on hover and focus */
+.btn--outline { height: 44px; padding: 0 var(--s-5); border: 1px solid color-mix(in oklab, var(--p-ink) 40%, transparent);
+  background: none; color: var(--p-ink); font: 500 13px/1 var(--font-mono); letter-spacing: .04em; text-transform: uppercase;
+  transition: border-color var(--dur-fast), color var(--dur-fast); }
+.btn--outline:hover { border-color: var(--optic); color: var(--optic); background: none; }
+.btn--outline:focus-visible { outline: 2px solid var(--optic); outline-offset: 3px; }
+html[data-buttons="pill"] .btn--outline::after { content: none; }
+
+/* ---- the story and its pinned stage */
+.story { position: relative; background: var(--p-bg); }
+.story__stage { position: sticky; top: 0; height: 100svh; z-index: 0; overflow: clip; pointer-events: none; }
+/* the chapters run over the stage: the first starts where the stage does */
+.story__stage + .chapter { margin-top: -100svh; }
+.story__canvas { position: absolute; inset: 0; }
+/* the hero's canvas slot, moved in here by story.js, fills the stage */
+.story__canvas > .vehicle-stage__canvas { position: absolute; inset: 0; }
+.story__canvas .vehicle-stage__gl { border-radius: 0; cursor: default; }
+.story__stills, .story__stills picture { position: absolute; inset: 0; }
+.story__still { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* the light reveal on the still: up from the black page by --lp (story.js; 1 without script) */
+.story__still--lit { opacity: var(--lp, 1); }
+/* and on the live car (--lv, story.js): its unlit pixels are black, a shade off the page's own ground, so
+   it is faded out entirely at the start of the reveal and fully there once a little light is up. The
+   stand-in tag describes the car, so it comes with it. */
+.story__canvas, .story__standin { opacity: clamp(0, calc(var(--lv, 1) / .12), 1); }
+.story__standin { position: absolute; right: var(--gut); bottom: var(--s-5); }
+
+/* states (story.js): poster = no live 3D (none on this device, still loading, failed, or the context lost);
+   waiting = the 3D car is still in the hero; entering = it has moved here and is drawing the chapter's
+   pose, still hidden; live = it is here and shown. The stage is never empty: until the live car is
+   shown, the stills stand in at the same framing and light. */
+.story__stage .vehicle-stage__gl { opacity: 0; }
+.story__stage[data-state="live"] .vehicle-stage__gl { opacity: 1; }
+/* live: the stills go once the canvas has faded in over them (both at once would dip through dark), and
+   leave the compositor entirely (two full-screen images kept at opacity 0 still cost every frame) */
+.story__stage[data-state="live"] .story__stills { opacity: 0; visibility: hidden; }
+@media (prefers-reduced-motion: no-preference) {
+  .story__stage .vehicle-stage__gl { transition: opacity 400ms var(--ease-settle); }
+  .story__stage[data-state="live"] .story__stills { transition: opacity 0s linear 450ms, visibility 0s linear 450ms; }
+}
+
+/* ---- a chapter: a tall section whose frame stays pinned for (height - 100svh) of scroll */
+.chapter { position: relative; z-index: 1; }
+.chapter__frame { position: sticky; top: 0; height: 100svh; display: grid; grid-template-rows: 1fr auto;
+  padding: calc(var(--nav) + clamp(24px, 6svh, 72px)) 0 var(--s-5); }
+.chapter__in { align-self: start; }
+.chapter__mark { margin: 0 0 var(--s-5); display: flex; align-items: center; gap: var(--s-3);
+  font: 400 13px/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--p-muted); }
+.chapter__dash { width: 32px; height: 1px; background: currentColor; opacity: .6; }
+.chapter__source { margin-block: 0; font: 400 12px/1.5 var(--font-mono); color: var(--p-muted); }
+.chapter__source a { color: inherit; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in oklab, var(--p-muted) 50%, transparent); pointer-events: auto; }
+.chapter__source a:hover { color: var(--p-ink); }
+.chapter__source a:focus-visible { outline: 2px solid var(--optic); outline-offset: 2px; }
+
+/* ---- III Power */
+.chapter--power { height: 380svh; }
+.power__figure { margin: 0; font: 400 clamp(96px, 13vw, 208px)/.9 var(--font-mono); letter-spacing: -.04em; color: var(--p-ink);
+  font-variant-numeric: tabular-nums; }
+/* left-aligned on the chapter mark's edge, so the opening 0 starts where the words do; a fixed box, so
+   nothing after it moves as the count grows */
+.power__count { display: inline-block; width: 5ch; text-align: left; margin-left: -.05em; } /* the mono digits' own left bearing */
+.power__unit { margin: var(--s-4) 0 0; font: 400 15px/1 var(--font-mono); letter-spacing: .14em; color: var(--p-muted); }
+.power__sep { color: var(--optic); }
+.power__petrol { margin: var(--s-6) 0 0; max-width: 30ch; font-size: clamp(17px, .5vw + 15px, 20px); line-height: 1.5; color: var(--p-ink); }
+
+/* reveals. The mark, the figure and the unit come in with the chapter as it rises into the screen (--e,
+   story.js), so Power starts the moment the hero leaves; they are whole by the time the chapter is 80% in.
+   Desktop: the figure (the display element) sharpens out of a blur. The mobile tier (as src/vehicle/gate.js
+   sorts it): no blur, which a phone draws as a grey smudge; the words fade and rise 12px instead.
+   The petrol line rises 8px in over p 0.86..0.95, after the count has landed. */
+.power__figure, .power__unit, .chapter--power .chapter__mark {
+  --k: clamp(0, (var(--e, 1) - .35) / .45, 1);
+  opacity: var(--k); }
+.power__figure { filter: blur(calc((1 - var(--k)) * 10px)); }
+@media (max-width: 639px), (pointer: coarse) {
+  .power__figure { filter: none; }
+  .power__figure, .power__unit, .chapter--power .chapter__mark { translate: 0 calc((1 - var(--k)) * 12px); }
+}
+.power__petrol { --k: clamp(0, (var(--p, 1) - .86) / .09, 1); opacity: var(--k); translate: 0 calc((1 - var(--k)) * 8px); }
+
+/* reduced motion: no blur, no movement; the words fade in over 150ms at their thresholds */
+@media (prefers-reduced-motion: reduce) {
+  .power__figure, .power__unit, .chapter--power .chapter__mark, .power__petrol { filter: none; translate: none; opacity: 0;
+    transition: opacity 150ms linear; }
+  .chapter--power[data-entered] :is(.power__figure, .power__unit, .chapter__mark) { opacity: 1; }
+  .chapter--power[data-late] .power__petrol { opacity: 1; }
+  .story:not([data-story-ready]) :is(.power__figure, .power__unit, .chapter__mark, .power__petrol) { opacity: 1; }
+}
+
+/* composition: from 900px the words keep a left column (the camera frames the car in the right half,
+   chapters/power.js); below that they stay at the top and the car sits under them */
+@media (min-width: 900px) {
+  .chapter--power .chapter__in > * { max-width: 42vw; }
+  .chapter--power .power__figure { font-size: clamp(88px, 9.5vw, 168px); }
+}
+@media (max-width: 639px) {
+  .chapter--power { height: 450svh; }
+  .power__figure { font-size: clamp(72px, 22vw, 200px); }
+  .power__unit { font-size: 13px; }
+  .power__petrol { margin-top: var(--s-5); }
+  .story__standin { bottom: auto; top: calc(var(--nav) + clamp(24px, 6svh, 72px)); }
+  .chapter__source { font-size: 11px; }
+}

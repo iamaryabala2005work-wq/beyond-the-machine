@@ -36,7 +36,9 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(26, 2, 0.05, 200);
 
-  let rig, lighting, model, raf = 0, visible = true, destroyed = false, offsetY = 0, offsetYCompact = 0;
+  let rig, lighting, model, manifest = null, raf = 0, visible = true, destroyed = false, offsetY = 0, offsetYCompact = 0;
+  let frameShift = null; // the story's own vertical framing (a fraction of the height), or null for the manifest's
+  let frameShiftX = 0;   // and its horizontal framing (a fraction of the width; positive moves the car right)
   const wide = matchMedia('(min-width: 1024px)');
   const accent = getComputedStyle(stage).getPropertyValue('--optic').trim() || '#7fe0ee';
 
@@ -181,23 +183,43 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
   }
 
   // ---- size: follows the stage (ResizeObserver), keeps the user's zoom
+  // The drawing buffer is only resized when the size or the pixel ratio actually changed: assigning a
+  // canvas its width, even the same one, reallocates and clears it, and a resize also runs for a change
+  // of framing alone (setFrameShift) and for the ResizeObserver's echo after the story moves the canvas.
+  let sizeKey = '';
+  let viewW = 1, viewH = 1; // the size the last resize() measured
   function resize() {
-    const w = Math.max(1, host.clientWidth);
-    const h = Math.max(1, host.clientHeight);
-    renderer.setSize(w, h, false);
+    viewW = Math.max(1, host.clientWidth);
+    viewH = Math.max(1, host.clientHeight);
+    const key = `${viewW}x${viewH}@${renderer.getPixelRatio()}`;
+    if (key !== sizeKey) { sizeKey = key; renderer.setSize(viewW, viewH, false); }
+    applyView();
+  }
+  // the projection for the measured size and the current framing. A change of framing alone (the story's
+  // setFrameShift) comes here without measuring: reading the host's size right after the story moved the
+  // canvas would force a synchronous layout in the scroll frame; the ResizeObserver brings the new size
+  // after the browser's own layout, in the same frame.
+  function applyView() {
+    const w = viewW, h = viewH;
     camera.aspect = w / h;
     // shift the car in the frame (manifest camera.offsetY, a fraction of the height; negative lifts it).
     // From 1024px the view controls sit under the car, so it is lifted clear of them; below that they sit
     // at the top of the stage and the car keeps offsetYCompact, settled on the rings.
-    const shift = wide.matches ? offsetY : offsetYCompact;
-    camera.setViewOffset(w, h, 0, -h * shift, w, h);
+    const shift = frameShift ?? (wide.matches ? offsetY : offsetYCompact);
+    camera.setViewOffset(w, h, -w * frameShiftX, -h * shift, w, h);
     camera.updateProjectionMatrix();
     rig?.resize(camera.aspect);
     invalidate();
   }
-  const ro = new ResizeObserver(resize);
+  // a size change is taken in the next frame, not inside the observer: when the story moves the canvas,
+  // the move's own style and layout and the drawing buffer's reallocation then fall in separate frames
+  let resizeRaf = 0;
+  const ro = new ResizeObserver(() => {
+    if (!resizeRaf) resizeRaf = requestAnimationFrame(() => { resizeRaf = 0; if (!destroyed) resize(); });
+  });
 
-  // ---- visibility: no frames off screen or in a background tab
+  // ---- visibility: no frames off screen or in a background tab. It watches the canvas's own slot, which
+  // the story moves out of the hero and back (src/story/story.js), so frames follow the car, not the hero.
   const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) invalidate(); });
   const onVis = () => { visible = !document.hidden; if (visible) invalidate(); };
 
@@ -210,7 +232,7 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
   const onLeave = () => { if (lighting?.release()) invalidate(); };
 
   const ready = (async () => {
-    const manifest = await loadManifest(manifestUrl);
+    manifest = await loadManifest(manifestUrl);
     const cam = manifest.camera ?? {};
     camera.fov = cam.fov ?? 26;
     offsetY = cam.offsetY ?? 0;
@@ -221,12 +243,12 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
     if (destroyed) { disposeObject(model.root); return; }
     scene.add(model.root);
 
-    lighting = createLighting({ scene, renderer, box: model.box, accent, reducedMotion });
+    lighting = createLighting({ scene, renderer, box: model.box, accent, reducedMotion, root: model.root });
     rig = createRig({ camera, canvas, stage, box: model.box, config: cam, reducedMotion, onChange: invalidate });
 
     resize();
     ro.observe(host);
-    io.observe(stage);
+    io.observe(host);
     document.addEventListener('visibilitychange', onVis);
     stage.addEventListener('pointermove', onMove);
     stage.addEventListener('pointerleave', onLeave);
@@ -287,6 +309,27 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
     // the camera's heading in radians (read-only; later phases and tests use it)
     azimuth: () => rig?.azimuth(),
     onZoom: (f) => rig?.onZoom(f),
+    // ---- story (src/story/story.js): the camera follows the page's scroll instead of the visitor's hand
+    // a named shot from the manifest (camera.shots), with its "compact" overrides on a phone-sized screen;
+    // a shot the manifest lacks falls back to home, so an older manifest still runs the story
+    shot(name) {
+      const cam = manifest?.camera ?? {};
+      const s = cam.shots?.[name] ?? cam.home ?? { azimuth: 0, polar: 75 };
+      const compact = matchMedia('(max-width: 639px)').matches;
+      const { compact: small, ...base } = s;
+      return compact && small ? { ...base, ...small } : base;
+    },
+    pose: (a, b, t) => rig?.pose(a, b, t) ?? false,
+    setMode: (m) => rig?.setMode(m),
+    snapshot: () => rig?.snapshot(),
+    restore: (snap) => rig?.restore(snap),
+    // dims the studio light for the story (1 = the hero's)
+    setKey(level) { if (lighting?.setKey(level)) invalidate(); },
+    // shifts the car in the frame for the story: y a fraction of the height (negative lifts it, null = the
+    // manifest's), x a fraction of the width (positive moves it right)
+    setFrameShift(v, x = 0) { if (frameShift === v && frameShiftX === x) return; frameShift = v; frameShiftX = x; applyView(); },
+    // the story's silhouette light, 0..1: a cool rim along the roofline and a soft glow on the floor (0 = off, as in the hero)
+    setSilhouette(level) { if (lighting?.setSilhouette(level)) invalidate(); },
     // f(true) when the car starts moving, f(false) when it comes to rest; called once at once with the
     // current state. Returns a function that unsubscribes.
     onActivity: (f) => { activityListeners.add(f); f(active); return () => activityListeners.delete(f); },
@@ -303,6 +346,7 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
       destroyed = true;
       cancelAnimationFrame(raf);
       cancelAnimationFrame(probing);
+      cancelAnimationFrame(resizeRaf);
       gpuTimer?.dispose();
       ro.disconnect();
       io.disconnect();
