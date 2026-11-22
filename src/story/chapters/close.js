@@ -22,9 +22,12 @@ import { paintChoice, showStill, placeStill } from '../paint.js';
 
 const GAP = 24;        // px kept clear between the car and the mark above it
 const FOOT = 64;       // px kept clear at the stage's foot, from 640px, for the stand-in tag in its corner
-const SIDE = 0.06;     // of the width at least, each side: a wide shot, with air round it
-const SIDE_PHONE = 12; // px each side on phones: the car a little wider than the page's gutters, as large as it can be
-const LOW = 0.08;      // phones: the band starts this share lower, so the car sits a little under the middle
+// The last frame of a film: the whole car, nose to tail, with clear black round it at any window shape.
+const SIDE = 0.10;     // of the width clear each side, from 640px (never less than the page's gutter)
+const SIDE_PHONE = 0.07; // the same on phones, where the wide car is small against the tall screen anyway
+const MAX_H = 0.42;    // of the frame's height at most for the car's band, from 640px: a short window shrinks
+                       // the car rather than filling up with it
+const LOW = 0.03;      // phones: the band starts this share lower, so the car sits a little under the middle
                        // of the tall frame (a low horizon) and leaves less black under it as it scrolls away
 const phoneQuery = matchMedia('(max-width: 639px)');
 
@@ -45,12 +48,20 @@ export function createClose(el, { stage }) {
     const h = head.getBoundingClientRect();
     const cs = getComputedStyle(frame);
     const W = Math.max(1, f.width), H = Math.max(1, f.height);
-    const side = phoneQuery.matches ? SIDE_PHONE : Math.max(parseFloat(getComputedStyle(head).paddingLeft) || 0, W * SIDE);
-    const bottom = H - parseFloat(cs.paddingBottom) - (phoneQuery.matches ? 0 : FOOT);
+    const phone = phoneQuery.matches;
+    const side = Math.max(parseFloat(getComputedStyle(head).paddingLeft) || 0, W * (phone ? SIDE_PHONE : SIDE));
+    let bottom = H - parseFloat(cs.paddingBottom) - (phone ? 0 : FOOT);
     let top = h.bottom - f.top + GAP;
-    if (phoneQuery.matches) top += (bottom - top) * LOW;
-    rect = { left: side / W, right: (W - side) / W, top: top / H, bottom: Math.max(top + 1, bottom) / H };
-    placeStill(still, side, top, W - side, Math.max(top + 1, bottom), STILL_PAD);
+    if (phone) top += (bottom - top) * LOW;
+    else if (bottom - top > H * MAX_H) {
+      // a band taller than the car may be: the car keeps to MAX_H, centred where the band was
+      const mid = (top + bottom) / 2;
+      top = mid - (H * MAX_H) / 2;
+      bottom = mid + (H * MAX_H) / 2;
+    }
+    bottom = Math.max(top + 1, bottom);
+    rect = { left: side / W, right: (W - side) / W, top: top / H, bottom: bottom / H };
+    placeStill(still, side, top, W - side, bottom, STILL_PAD);
   }
 
   return {

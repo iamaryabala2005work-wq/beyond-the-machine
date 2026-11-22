@@ -124,6 +124,31 @@
     </div></div>
   </section>
 
+  <section class="section ground-surface" id="machine" style="--hm: 2" aria-labelledby="machine-h">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="machine-h">The Jesko Absolut in four figures. <span class="muted">Each from Koenigsegg’s published specifications.</span></h2>
+      </div>
+      <div class="grid fill machine">
+        <div class="span-6 machine__figures" data-moment="counter-rolls">
+          <div class="spec"><p class="t-stat">1,600 hp</p><p class="spec__label">Output on E85 ethanol; 1,280 hp on petrol, redline 8,500 rpm.</p></div>
+          <div class="spec"><p class="t-stat">0.278</p><p class="spec__label">Drag coefficient. Koenigsegg’s aerodynamics team had aimed for 0.28.</p></div>
+          <div class="spec"><p class="t-stat">5.0 L</p><p class="spec__label">Twin-turbo V8 with a flat-plane crankshaft and dry-sump lubrication.</p></div>
+          <div class="spec"><p class="t-stat">9</p><p class="spec__label">Forward gears in the Light Speed Transmission, which weighs 90 kg.</p></div>
+          <p class="machine__sources">Sources: <a class="link" href="https://www.koenigsegg.com/model/jesko-absolut" rel="noopener">Jesko Absolut model page</a> and <a class="link" href="https://www.koenigsegg.com/technical-specifications-jesko-absolut" rel="noopener">technical specifications</a>, koenigsegg.com.</p>
+        </div>
+        <div class="frame frame--fill span-6 start-7 machine__detail">
+          <img class="frame__img" src="/vehicle/posters/detail-1400.webp"
+               srcset="/vehicle/posters/detail-800.webp 800w, /vehicle/posters/detail-1400.webp 1400w"
+               sizes="(max-width: 639px) 92vw, 628px" width="1400" height="934" loading="lazy"
+               alt="Close render of the stand-in 3D concept car’s front quarter, not the Jesko Absolut: the headlight and the front wheel"
+               data-source="stand-in" data-subject="Stand-in 3D model, front quarter, rendered">
+          <span class="hud-tag machine__standin">Stand-in 3D model<span class="hud-tag__dot" aria-hidden="true"></span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- THE STORY (src/story/story.js, src/styles/story.css). One pinned stage behind every chapter: when the
        stage pins, the hero's live 3D canvas moves into [data-story-canvas] (one canvas, one WebGL context) and
        the camera follows the scroll position; scrolling back above the story returns it to the hero as it was.
@@ -207,7 +232,8 @@
     </section>
   </div>
 
-  <!-- The signature: on black, after the car has gone (src/story/signature.js reveals it once). -->
+  <!-- The signature: on black, after the car has gone, the last thing before the footer (src/story/signature.js
+       reveals it once). -->
   <section class="signature" id="signature" data-signature aria-labelledby="signature-h">
     <div class="wrap signature__in">
       <h2 class="signature__title" id="signature-h">Beyond the machine.</h2>
@@ -216,30 +242,6 @@
     </div>
   </section>
 
-  <section class="section ground-surface" id="machine" style="--hm: 2" aria-labelledby="machine-h">
-    <div class="wrap">
-      <div class="section-head">
-        <h2 id="machine-h">The Jesko Absolut in four figures. <span class="muted">Each from Koenigsegg’s published specifications.</span></h2>
-      </div>
-      <div class="grid fill machine">
-        <div class="span-6 machine__figures" data-moment="counter-rolls">
-          <div class="spec"><p class="t-stat">1,600 hp</p><p class="spec__label">Output on E85 ethanol; 1,280 hp on petrol, redline 8,500 rpm.</p></div>
-          <div class="spec"><p class="t-stat">0.278</p><p class="spec__label">Drag coefficient. Koenigsegg’s aerodynamics team had aimed for 0.28.</p></div>
-          <div class="spec"><p class="t-stat">5.0 L</p><p class="spec__label">Twin-turbo V8 with a flat-plane crankshaft and dry-sump lubrication.</p></div>
-          <div class="spec"><p class="t-stat">9</p><p class="spec__label">Forward gears in the Light Speed Transmission, which weighs 90 kg.</p></div>
-          <p class="machine__sources">Sources: <a class="link" href="https://www.koenigsegg.com/model/jesko-absolut" rel="noopener">Jesko Absolut model page</a> and <a class="link" href="https://www.koenigsegg.com/technical-specifications-jesko-absolut" rel="noopener">technical specifications</a>, koenigsegg.com.</p>
-        </div>
-        <div class="frame frame--fill span-6 start-7 machine__detail">
-          <img class="frame__img" src="/vehicle/posters/detail-1400.webp"
-               srcset="/vehicle/posters/detail-800.webp 800w, /vehicle/posters/detail-1400.webp 1400w"
-               sizes="(max-width: 639px) 92vw, 628px" width="1400" height="934" loading="lazy"
-               alt="Close render of the stand-in 3D concept car’s front quarter, not the Jesko Absolut: the headlight and the front wheel"
-               data-source="stand-in" data-subject="Stand-in 3D model, front quarter, rendered">
-          <span class="hud-tag machine__standin">Stand-in 3D model<span class="hud-tag__dot" aria-hidden="true"></span></span>
-        </div>
-      </div>
-    </div>
-  </section>
 </main>
 
 <footer class="footer site-footer" id="contact" aria-label="About this site">
@@ -251,8 +253,6 @@
       <ul>
         <li><a href="https://www.koenigsegg.com/model/jesko-absolut" rel="noopener">Jesko Absolut model page</a><span class="site-footer__where">koenigsegg.com</span></li>
         <li><a href="https://www.koenigsegg.com/technical-specifications-jesko-absolut" rel="noopener">Jesko Absolut technical specifications</a><span class="site-footer__where">koenigsegg.com</span></li>
-        <li><a href="https://www.koenigsegg.com/lst" rel="noopener">Light Speed Transmission</a><span class="site-footer__where">koenigsegg.com</span></li>
-        <li><a href="https://news.cision.com/koenigsegg/r/all-new-koenigsegg-jesko-announced-at-geneva-2019,c2881595" rel="noopener">All-New Koenigsegg Jesko announced at Geneva 2019</a><span class="site-footer__where">Koenigsegg press release, Cision, 5 March 2019</span></li>
       </ul>
     </div>
     <div class="footer__legal site-footer__legal">

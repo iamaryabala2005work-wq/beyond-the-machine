@@ -99,6 +99,10 @@ export function initStory() {
     const state = !viewer || lost ? 'poster' : !inStory ? 'waiting' : shown ? 'live' : 'entering';
     if (stageEl.dataset.state !== state) stageEl.dataset.state = state;
     if (standinTag) standinTag.hidden = !(state === 'live' && standIn);
+    // the car's chapter is letting go, its words rising up past the tag's corner: the tag steps out
+    // (story.css). A chapter coming in stops below it, so the tag stays then.
+    const between = Boolean(shot) && shot.x > 0;
+    if (stageEl.hasAttribute('data-between') !== between) stageEl.toggleAttribute('data-between', between);
     const handsOn = state === 'live' && Boolean(shot?.impl.handsOn);
     if (stageEl.hasAttribute('data-hands-on') !== handsOn) stageEl.toggleAttribute('data-hands-on', handsOn);
     if (state !== lastState) { lastState = state; for (const c of chapters) c.impl.state?.(state, viewer); }
@@ -114,6 +118,7 @@ export function initStory() {
     handle.ready.then((info) => { standIn = Boolean(info?.manifest?.standIn); setState(); });
     handle.onContextChange?.((isLost) => { lost = isLost; setState(); });
     handle.onResize?.(() => schedule()); // a hands-on chapter fits the car to the canvas's new size
+    handle.onActivity?.(() => schedule()); // a frame drawn: a reveal waiting for one can finish (reveal())
     setState();
     schedule(true);
   }
@@ -135,16 +140,33 @@ export function initStory() {
     setState();
   }
   // the canvas is shown once it has drawn the chapter's pose at its new size: the pose is set in this
-  // frame (tick), a new size is taken in the next (viewer.js), the frame after draws both
+  // frame (tick), a new size is taken in the next (viewer.js), the frame after draws both. And only once
+  // the viewer has really drawn since the pose was set: the car can move into the story while the stage
+  // is still off screen (the specifications sit between the hero and the story), where the viewer draws
+  // nothing, so the canvas still holds the hero's last frame. Then the stage keeps its stills until the
+  // first frame drawn on screen (the viewer's activity brings a tick, which checks again).
   let revealing = 0;
+  let revealAfter = -1; // while a reveal waits for a frame drawn on screen: the viewer's frame count to beat
+  const drawn = () => viewer.frames?.() ?? Infinity;
+  // whether the stage is on screen. A frame counts for a reveal only when drawn after the stage came into
+  // view: right after the canvas moves, the viewer may still draw one frame off screen before its own
+  // observer catches up.
+  let stageSeen = false;
+  new IntersectionObserver(([e]) => {
+    stageSeen = e.isIntersecting;
+    if (stageSeen && revealAfter >= 0) revealAfter = drawn();
+    schedule();
+  }).observe(stageEl);
   function reveal() {
     const token = ++revealing;
+    const f0 = drawn();
     let frames = 0;
+    revealAfter = -1;
     const wait = () => {
       if (!inStory || token !== revealing) return;
       if (++frames < 4) { requestAnimationFrame(wait); return; }
-      shown = true;
-      setState();
+      if (stageSeen && drawn() > f0) { shown = true; setState(); }
+      else revealAfter = stageSeen ? f0 : drawn(); // not drawn on screen yet: tick() finishes it
     };
     requestAnimationFrame(wait);
   }
@@ -162,6 +184,7 @@ export function initStory() {
     shown = false;
     shot = null;
     revealing++;
+    revealAfter = -1;
     lastLp = ''; // the stills are back: bring their light level up to date
     homeMarker.after(host);
     viewer.setFrameShift(null);
@@ -247,6 +270,7 @@ export function initStory() {
     if (stageEl.dataset.shot !== want.name) stageEl.dataset.shot = want.name;
 
     if (inStory && !lost) {
+      if (revealAfter >= 0 && stageSeen && drawn() > revealAfter) { revealAfter = -1; shown = true; }
       if (want !== shot) {
         if (shown) {
           // a reshoot: fade the canvas out over the next chapter's still (at once under reduced motion)

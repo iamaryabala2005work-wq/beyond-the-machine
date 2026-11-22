@@ -19,11 +19,11 @@
 .grid.fill > .machine__detail, .machine__detail { width: 100%; height: auto; flex: none; min-height: 0; align-self: start; aspect-ratio: 1400 / 934; padding: 0; }
 .machine__detail::before { content: none; }
 .machine__detail .frame__img { object-fit: contain; }
-@media (max-width: 1023px) {
-  /* stacked, the section is as tall as what it holds (the kit's two-screen minimum left a black band) */
-  #machine.section { min-height: 0; }
-  #machine .grid.fill { flex: none; min-height: auto; }
-}
+/* as tall as what it holds at every width: the kit's one-screen height left a band on tall screens and,
+   on short desktop windows, was less than the figures and the picture need. It sits between the hero
+   and the story. */
+#machine.section { height: auto; min-height: 0; }
+#machine .grid.fill { flex: none; min-height: auto; }
 
 /* the footer: small, readable and calm. The concept tag, the disclaimer, the sources the chapters quote,
    then the trademark line and the model credits. As tall as what it holds. */

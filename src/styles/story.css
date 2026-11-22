@@ -44,6 +44,10 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
    stand-in tag describes the car, so it comes with it. */
 .story__canvas, .story__standin { opacity: clamp(0, calc(var(--lv, 1) / .12), 1); }
 .story__standin { position: absolute; right: var(--gut); bottom: var(--s-5); }
+/* phones, where the tag sits at the top: while a chapter lets go (story.js data-between) the tag steps
+   out, so its words rising past never run across it. From 640px it sits at the foot, clear of them. */
+@media (max-width: 639px) { .story__stage[data-between] .story__standin { opacity: 0; } }
+@media (prefers-reduced-motion: no-preference) { .story__standin { transition: opacity 200ms linear; } }
 
 /* states (story.js): poster = no live 3D (none on this device, still loading, failed, or the context lost);
    waiting = the 3D car is still in the hero; entering = it has moved here and is drawing the chapter's
@@ -129,7 +133,7 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
 }
 
 /* ---- leaving: as a chapter's frame lets go and scrolls up (--x, story.js), what sits at its foot (the
-   source line, Chapter V's finish and swatches) fades out over the first tenth of a screen, before it can
+   source line) fades out over the first tenth of a screen, before it can
    rise across the car, which stays pinned behind it until the next chapter takes it. The words at the top
    scroll away from the car, so they simply go with the frame. */
 .chapter { --gone: clamp(0, 1 - var(--x, 0) / .1, 1); }
@@ -170,7 +174,10 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
 .yours__title, .chapter--yours .chapter__mark { opacity: 0;
   transition: opacity var(--dur-reveal) var(--ease-settle), filter var(--dur-reveal) var(--ease-settle), translate var(--dur-reveal) var(--ease-settle); }
 .yours__title { filter: blur(10px); }
-.yours__controls { --k: clamp(0, var(--p, 1) / .2, 1); opacity: calc(var(--k) * var(--gone, 1)); translate: 0 calc((1 - var(--k)) * 8px); }
+/* and they retire over the last 5% of the pinned scroll, while nothing moves, so they are gone before the
+   frame lets go and could rise across the car */
+.yours__controls { --k: clamp(0, var(--p, 1) / .2, 1); --retire: clamp(0, (1 - var(--p, 0)) / .05, 1);
+  opacity: calc(var(--k) * var(--retire)); translate: 0 calc((1 - var(--k)) * 8px); }
 @media (max-width: 639px), (pointer: coarse) {
   .yours__title { filter: none; }
   .yours__title, .chapter--yours .chapter__mark { translate: 0 12px; }
@@ -179,7 +186,7 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
 @media (prefers-reduced-motion: reduce) {
   .yours__title, .chapter--yours .chapter__mark, .yours__controls { filter: none; translate: none; opacity: 0; transition: opacity 150ms linear; }
   .chapter--yours[data-arrived] :is(.yours__title, .chapter__mark) { opacity: 1; }
-  .chapter--yours[data-entered] .yours__controls { opacity: var(--gone, 1); }
+  .chapter--yours[data-entered] .yours__controls { opacity: var(--retire, 1); }
   .yours__dot { transition: none; }
 }
 .story:not([data-story-ready]) :is(.yours__title, .chapter--yours .chapter__mark, .yours__controls) { opacity: 1; filter: none; translate: none; }
@@ -217,7 +224,9 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
 .signature__in { display: flex; flex-direction: column; align-items: flex-start; }
 .signature__title { margin: 0; font: var(--display-weight, 500) clamp(48px, min(9.5vw, 16svh), 152px)/.9 var(--font-display);
   letter-spacing: var(--display-tracking-xl, -.045em); text-transform: uppercase; color: var(--p-ink); text-wrap: balance; }
-.signature__by { margin: var(--s-6) 0 0; font: 400 13px/1.4 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--p-muted); }
+/* the credit: mono and capitals like the chapter marks, but in ink and large enough to read at a glance;
+   still well under the line above it */
+.signature__by { margin: var(--s-6) 0 0; font: 500 clamp(15px, .35vw + 13px, 19px)/1.4 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--p-ink); }
 .signature__cta { margin-top: var(--s-7); display: inline-flex; align-items: center; justify-content: center; gap: 10px; border-radius: 999px; text-decoration: none; }
 @media (max-width: 639px) {
   /* the black under the departing car already gives the line its air */
