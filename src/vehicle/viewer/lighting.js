@@ -103,15 +103,17 @@ export function createLighting({ scene, renderer, box, accent, reducedMotion }) 
       place(azimuth);
       return Math.abs(goal.x - now.x) + Math.abs(goal.y - now.y) > 0.002;
     },
-    // how much of the studio light falls on the car, 0..1 (1 = as in the hero). The story dims it for
-    // its darker chapters; the cyan rim stays as it is, so a dimmed car still shows its outline.
+    // how much of the studio light falls on the car, 0..1 (1 = as in the hero). The story dims it: at 0
+    // the key is off and the room reflection and the cyan rim are down to a trace, so the car is a
+    // silhouette (setSilhouette draws its roofline). Brightness only, so no shader is recompiled.
     // Returns true when it changed, so the caller draws a frame.
     setKey(level) {
       const k = Math.min(1, Math.max(0, level));
-      const keyI = 2.4 * k, envI = 0.55 * (0.25 + 0.75 * k);
+      const keyI = 2.4 * k, envI = 0.55 * (0.04 + 0.96 * k), rimI = 1.6 * (0.12 + 0.88 * k);
       if (Math.abs(key.intensity - keyI) < 1e-3 && Math.abs(scene.environmentIntensity - envI) < 1e-3) return false;
       key.intensity = keyI;
       scene.environmentIntensity = envI;
+      rim.intensity = rimI;
       return true;
     },
     // the story's silhouette light, 0..1 (see above). Returns true when it changed, so the caller draws a frame.

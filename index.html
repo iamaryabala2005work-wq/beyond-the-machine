@@ -130,9 +130,19 @@
        The page always scrolls natively. Without 3D, the stage shows the poster and the chapters read the same. -->
   <div class="story" id="story" data-story>
     <div class="story__stage" data-story-stage data-state="poster" aria-hidden="true">
-      <img class="story__poster is-cutout" data-story-poster src="/vehicle/posters/hero-1600.webp"
-           srcset="/vehicle/posters/hero-960.webp 960w, /vehicle/posters/hero-1600.webp 1600w, /vehicle/posters/hero-2400.webp 2400w"
-           sizes="(max-width: 639px) 92vw, 1280px" width="2400" height="1354" loading="lazy" alt="">
+      <!-- Chapter III's car as stills (scripts/render-posters.mjs, framed and lit as the live chapter frames
+           and lights it): the dark one at the start of the light reveal, the lit one over it by --lp. The
+           stage shows them before the live car arrives from the hero and when there is no 3D. -->
+      <div class="story__stills" data-story-poster>
+        <picture>
+          <source media="(min-width: 900px)" srcset="/vehicle/posters/power-split-dark.webp">
+          <img class="story__still" src="/vehicle/posters/power-stack-dark.webp" alt="" loading="lazy" decoding="async">
+        </picture>
+        <picture>
+          <source media="(min-width: 900px)" srcset="/vehicle/posters/power-split-lit.webp">
+          <img class="story__still story__still--lit" src="/vehicle/posters/power-stack-lit.webp" alt="" loading="lazy" decoding="async">
+        </picture>
+      </div>
       <div class="story__canvas" data-story-canvas></div>
       <span class="hud-tag story__standin" data-story-standin hidden>Stand-in 3D model<span class="hud-tag__dot"></span></span>
     </div>

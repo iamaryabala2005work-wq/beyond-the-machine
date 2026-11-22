@@ -33,15 +33,20 @@ async function setup(manifestUrl) {
   return { manifest, renderer, scene, camera, rig, lighting, shadow };
 }
 
-// one poster: returns a PNG data URL of width x height (x scale), transparent where there is no car
-window.renderPoster = async ({ manifestUrl, shot, width, height, scale = 1, shadow = true }) => {
+// one poster: returns a PNG data URL of width x height (x scale), transparent where there is no car.
+// offset [x, y] shifts the car in the frame as the viewer's setFrameShift does (x of the width, positive
+// right; y of the height, positive down); light { key, silhouette } sets the story's light levels.
+window.renderPoster = async ({ manifestUrl, shot, width, height, scale = 1, shadow = true, offset = null, light = null }) => {
   ready ??= setup(manifestUrl);
   const s = await ready;
   s.renderer.setPixelRatio(scale);
   s.renderer.setSize(width, height, false);
   s.camera.aspect = width / height;
-  s.camera.clearViewOffset();
+  if (offset) s.camera.setViewOffset(width, height, -width * offset[0], -height * offset[1], width, height);
+  else s.camera.clearViewOffset();
   s.camera.updateProjectionMatrix();
+  s.lighting.setKey(light?.key ?? 1);
+  s.lighting.setSilhouette(light?.silhouette ?? 0);
   s.rig.resize(s.camera.aspect);
   s.rig.pose(shot, shot, 0);
   s.lighting.update(s.rig.azimuth());

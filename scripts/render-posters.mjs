@@ -3,6 +3,9 @@
 //   public/vehicle/posters/hero-{960,1600,2400}.webp   the hero poster: the first paint, the fallback when
 //                                                      there is no 3D, the story's fallback and the scan mask
 //   public/vehicle/posters/detail-{800,1400}.webp      the close view in the specifications section
+//   public/vehicle/posters/power-{stack,split}-{dark,lit}.webp
+//                                                      Chapter III's stage, both ends of its light reveal, per
+//                                                      layout (src/story/chapters/power-look.js)
 //   public/share.jpg                                   the link-preview card
 // The shots come from the manifest's "posters" block (model-agnostic: a new car brings its own), and the
 // car is drawn by the viewer's own model, light and camera code (scripts/posters/render.js), in a headless
@@ -17,6 +20,7 @@ import sharp from 'sharp';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { STAMP, manifestUrl, postersHash, stampedHash } from './posters/stamp.mjs';
+import { POSTERS as POWER, lightAt } from '../src/story/chapters/power-look.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const OUT = 'public/vehicle/posters';
@@ -80,8 +84,8 @@ try {
   page.on('pageerror', (e) => console.error('[render page]', e.message));
   await page.goto(`${base}/scripts/posters/render.html`);
   await page.waitForFunction(() => window.posterReady === true, null, { timeout: 60000 });
-  const render = async (shot, width, height, shadow) => {
-    const dataUrl = await page.evaluate((o) => window.renderPoster(o), { manifestUrl: url, shot, width, height, scale: SCALE, shadow });
+  const render = async (shot, width, height, shadow, extra = {}) => {
+    const dataUrl = await page.evaluate((o) => window.renderPoster(o), { manifestUrl: url, shot, width, height, scale: SCALE, shadow, ...extra });
     return Buffer.from(dataUrl.split(',')[1], 'base64');
   };
   await mkdir(`${root}${OUT}`, { recursive: true });
@@ -121,6 +125,25 @@ try {
       const file = `${OUT}/detail-${w}.webp`;
       const info = await sharp(png).resize({ width: w }).webp(WEBP_DETAIL).toFile(`${root}${file}`);
       written[file] = info.size;
+    }
+  }
+
+  // Chapter III's stage: the car as the chapter frames it, at the start (a silhouette) and the end (lit) of
+  // the light reveal. Drawn at the stage's own shape, edge to edge, so the page lays them over the stage
+  // exactly where the live car will be.
+  {
+    const base = manifest.camera?.shots?.power;
+    if (!base) throw new Error(`${url} has no camera.shots.power`);
+    const { compact, ...wide } = base;
+    for (const [layout, { size: [W, H], frame }] of Object.entries(POWER)) {
+      const s = layout === 'stack' && compact ? { ...wide, ...compact } : wide;
+      const shot = { ...s, zoom: (s.zoom ?? 1) * frame.zoom };
+      for (const [end, L] of [['dark', 0], ['lit', 1]]) {
+        const png = await render(shot, W / SCALE, H / SCALE, true, { offset: [frame.x, frame.y], light: lightAt(L) });
+        const file = `${OUT}/power-${layout}-${end}.webp`;
+        const info = await sharp(png).resize({ width: W }).webp(WEBP).toFile(`${root}${file}`);
+        written[file] = info.size;
+      }
     }
   }
 
