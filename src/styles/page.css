@@ -28,6 +28,12 @@
 .footer__note { margin: 0; color: var(--p-muted); max-width: 52ch; line-height: 1.6; }
 
 /* "Unofficial concept" is said in the close (the tag over its heading) and the footer's note, not in the bar */
+/* the close and the footer: at least one screen, and taller when what they hold needs it. The kit fixes
+   footer.closing at exactly one screen from 1280px, with the close in a minmax(0, 1fr) row: on a window
+   shorter than its content the close's button was squashed and ran into the footer's links. */
+footer.closing { height: auto; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; }
+footer.closing > .wrap { flex: 1 0 auto; height: auto; grid-template-rows: minmax(min-content, 1fr) auto; }
+.closing__cta > .btn { flex: none; }
 .closing .section-head > .closing__concept { margin: 0 0 var(--s-4); font-size: 13px; letter-spacing: .04em; color: var(--p-muted); }
 
 /* phones have no room for the logo, the tag and the nav's button: the main action stays in the hero and

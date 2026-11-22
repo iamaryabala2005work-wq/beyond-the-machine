@@ -53,8 +53,9 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
 .chapter--power { height: 200svh; }
 .power__figure { margin: 0; font: 400 clamp(96px, 13vw, 208px)/.9 var(--font-mono); letter-spacing: -.04em; color: var(--p-ink);
   font-variant-numeric: tabular-nums; }
-/* a fixed box, right-aligned: the digits never shift as the count grows */
-.power__count { display: inline-block; width: 5ch; text-align: right; }
+/* left-aligned on the chapter mark's edge, so the opening 0 starts where the words do; a fixed box, so
+   nothing after it moves as the count grows */
+.power__count { display: inline-block; width: 5ch; text-align: left; margin-left: -.05em; } /* the mono digits' own left bearing */
 .power__unit { margin: var(--s-4) 0 0; font: 400 15px/1 var(--font-mono); letter-spacing: .14em; color: var(--p-muted); }
 .power__sep { color: var(--optic); }
 .power__petrol { margin: var(--s-6) 0 0; max-width: 30ch; font-size: clamp(17px, .5vw + 15px, 20px); line-height: 1.5; color: var(--p-ink); }
