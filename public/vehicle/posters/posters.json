@@ -1,6 +1,6 @@
 {
   "$comment": "Written by scripts/render-posters.mjs. \"inputs\" is the hash of what the posters are made from (scripts/posters/stamp.mjs); vite build re-renders when it no longer matches.",
-  "inputs": "46b06130783c1dcf",
+  "inputs": "3fd576ed26c757b0",
   "manifest": "/vehicle/models/car-concept/manifest.json",
   "files": {
     "/vehicle/posters/hero-960.webp": 39844,
@@ -40,6 +40,6 @@
     "/vehicle/posters/close-bone-1600.webp": 73594,
     "/vehicle/posters/close-ember-800.webp": 30746,
     "/vehicle/posters/close-ember-1600.webp": 82402,
-    "/share.jpg": 38465
+    "/share.jpg": 46011
   }
 }

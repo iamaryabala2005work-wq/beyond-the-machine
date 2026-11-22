@@ -3,22 +3,34 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Beyond the Machine: a Jesko Absolut concept site</title>
-<meta name="description" content="An unofficial, speculative redesign concept for the Koenigsegg Jesko Absolut, with its published figures: 1,600 hp on E85 and a 0.278 drag coefficient.">
+<title>Beyond the Machine · The Jesko Absolut, an unofficial concept</title>
+<meta name="description" content="A cinematic, scroll-driven study of the Koenigsegg Jesko Absolut in four chapters: 1,600 hp on E85, a 0.278 drag coefficient, your paint. An unofficial concept.">
+<!-- The SITE and SELF placeholders become the production origin and this deployment's own (vite.config.js, siteMeta): crawlers need
+     absolute URLs for the share card. Set SITE_URL when the site has its own domain. -->
+<link rel="canonical" href="%SITE%/">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Beyond the Machine: a Jesko Absolut concept site">
-<meta property="og:description" content="An unofficial redesign concept for the Koenigsegg Jesko Absolut. Not affiliated with Koenigsegg.">
-<meta property="og:image" content="share.jpg">
+<meta property="og:site_name" content="Beyond the Machine">
+<meta property="og:url" content="%SITE%/">
+<meta property="og:title" content="Beyond the Machine">
+<meta property="og:description" content="The Jesko Absolut in four chapters: the name, the power, your paint, the close. An unofficial concept, not affiliated with Koenigsegg.">
+<meta property="og:image" content="%SELF%/share.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A dark, low side view of the stand-in concept car under a single light, with the words Beyond the machine">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Beyond the Machine">
+<meta name="twitter:description" content="The Jesko Absolut in four chapters: the name, the power, your paint, the close. An unofficial concept.">
+<meta name="twitter:image" content="%SELF%/share.jpg">
+<meta name="twitter:image:alt" content="A dark, low side view of the stand-in concept car under a single light, with the words Beyond the machine">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="theme-color" content="#07090c">
-<!-- <link rel="canonical" href="https://[domain to come]/"> : no domain yet, listed in the report -->
 <meta name="site-kind" content="tech">
 <meta name="page-type" content="product">
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Geist+Mono:wght@400..500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/fonts/geist.css">
 <link rel="stylesheet" href="/assets/system.css">
 <link rel="stylesheet" href="/assets/ui/cards.css">
 <link rel="stylesheet" href="/assets/motion/motion.css">
@@ -213,7 +225,7 @@
     <section class="chapter chapter--power" id="power" data-chapter="power" aria-labelledby="power-h">
       <div class="chapter__frame">
         <div class="wrap chapter__in">
-          <p class="chapter__mark" id="power-h"><span aria-hidden="true">II</span><span class="chapter__dash" aria-hidden="true"></span>Power</p>
+          <p class="chapter__mark" id="power-h" role="heading" aria-level="2"><span aria-hidden="true">II</span><span class="chapter__dash" aria-hidden="true"></span>Power</p>
           <p class="power__figure">
             <span class="power__count" data-count aria-hidden="true">1,600</span>
             <span class="sr-only">1,600 horsepower on E85</span>
@@ -253,7 +265,7 @@
     <section class="chapter chapter--close" id="close" data-chapter="close" aria-labelledby="close-h">
       <div class="chapter__frame">
         <div class="wrap chapter__in" data-close-head>
-          <p class="chapter__mark" id="close-h"><span aria-hidden="true">IV</span><span class="chapter__dash" aria-hidden="true"></span>Close</p>
+          <p class="chapter__mark" id="close-h" role="heading" aria-level="2"><span aria-hidden="true">IV</span><span class="chapter__dash" aria-hidden="true"></span>Close</p>
         </div>
       </div>
     </section>
@@ -261,7 +273,7 @@
 
   <!-- The signature: on black, after the car has gone, the last thing before the footer (src/story/signature.js
        reveals it once). -->
-  <section class="signature" id="signature" data-signature aria-labelledby="signature-h">
+  <section class="signature" id="signature" data-signature aria-label="Concept credit and contact">
     <div class="wrap signature__in">
       <h2 class="signature__title" id="signature-h">Beyond the machine.</h2>
       <p class="signature__by">Concept by ArcLight Intelligence</p>

@@ -85,6 +85,8 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
 .chapter__source a { color: inherit; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in oklab, var(--p-muted) 50%, transparent); pointer-events: auto; }
 .chapter__source a:hover { color: var(--p-ink); }
 .chapter__source a:focus-visible { outline: 2px solid var(--optic); outline-offset: 2px; }
+/* a source line fades with the scroll; reached by keyboard, it shows whatever the scroll position */
+.chapter .chapter__source:focus-within, .chapter.chapter--name .chapter__source:focus-within { opacity: 1; }
 
 /* ---- hands-on (Chapter V): the canvas takes the pointer, so a drag or a sideways swipe turns the car.
    The page still scrolls over it: the wheel is never taken, and touch-action: pan-y gives vertical swipes
