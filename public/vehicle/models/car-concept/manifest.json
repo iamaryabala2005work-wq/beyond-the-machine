@@ -181,6 +181,12 @@
       "zoomMax": 1.6
     },
     "shots": {
+      "name": {
+        "azimuth": -10,
+        "polar": 86,
+        "zoom": 1.0,
+        "target": [0, 0.36, 0]
+      },
       "power": {
         "azimuth": 150,
         "polar": 84,

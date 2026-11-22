@@ -114,6 +114,19 @@ export function createLighting({ scene, renderer, box, accent, reducedMotion, ro
     sweep.position.y += size.y * 0.15;
   }
 
+  // the key's level (setKey) and the warm grade (setWarmth), applied together
+  let keyLevel = 1, warmth = 0;
+  const KEY_COOL = new THREE.Color(0xf2f6fa), KEY_WARM = new THREE.Color(0xffa45c);
+  function applyKey() {
+    const k = keyLevel, w = warmth;
+    key.color.copy(KEY_COOL).lerp(KEY_WARM, w);
+    key.intensity = 2.4 * k * (1 + 1.3 * w);
+    scene.environmentIntensity = 0.55 * k * (1 - 0.62 * w);
+    rim.intensity = 1.6 * k * (1 - w);
+    const lamp = Math.min(1, k * 3);
+    for (const l of lamps) l.m.emissiveIntensity = l.base * lamp;
+  }
+
   return {
     setPointer(x, y) {
       if (reducedMotion) return false;
@@ -135,12 +148,20 @@ export function createLighting({ scene, renderer, box, accent, reducedMotion, ro
     // Brightness only, so no shader is recompiled. Returns true when it changed, so the caller draws a frame.
     setKey(level) {
       const k = Math.min(1, Math.max(0, level));
-      const keyI = 2.4 * k, envI = 0.55 * k, rimI = 1.6 * k, lamp = Math.min(1, k * 3);
-      if (Math.abs(key.intensity - keyI) < 1e-4 && Math.abs(scene.environmentIntensity - envI) < 1e-4) return false;
-      key.intensity = keyI;
-      scene.environmentIntensity = envI;
-      rim.intensity = rimI;
-      for (const l of lamps) l.m.emissiveIntensity = l.base * lamp;
+      if (Math.abs(k - keyLevel) < 1e-4) return false;
+      keyLevel = k;
+      applyKey();
+      return true;
+    },
+    // the story's warm grade (Chapter I), 0..1 (0 = off, as in the hero): the key light turns amber and a
+    // little brighter, while the room reflection and the cyan rim fall away, so the car is lit from one warm
+    // side and the rest of it sits in deep shadow. Colour and brightness only, on lights that are always in
+    // the scene, so no shader is recompiled. Returns true when it changed, so the caller draws a frame.
+    setWarmth(level) {
+      const w = Math.min(1, Math.max(0, level));
+      if (Math.abs(w - warmth) < 1e-4) return false;
+      warmth = w;
+      applyKey();
       return true;
     },
     // the story's silhouette light, 0..1 (see above). Returns true when it changed, so the caller draws a frame.

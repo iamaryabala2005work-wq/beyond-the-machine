@@ -36,7 +36,7 @@ async function setup(manifestUrl) {
 
 // one poster: returns a PNG data URL of width x height (x scale), transparent where there is no car.
 // offset [x, y] shifts the car in the frame as the viewer's setFrameShift does (x of the width, positive
-// right; y of the height, positive down); light { key, silhouette } sets the story's light levels.
+// right; y of the height, positive down); light { key, silhouette, warmth } sets the story's light levels.
 // fitRect { left, top, right, bottom } (fractions of the frame): instead of the shot's zoom and the offset,
 // fit the car into that rect at every heading as the live viewer does (fit.js, Chapter V), or at the
 // shot's own heading alone with fitSteps 1 (Chapter VI); the result is then { png, box } with the fitted
@@ -53,6 +53,7 @@ window.renderPoster = async ({ manifestUrl, shot, width, height, scale = 1, shad
   s.camera.updateProjectionMatrix();
   s.lighting.setKey(light?.key ?? 1);
   s.lighting.setSilhouette(light?.silhouette ?? 0);
+  s.lighting.setWarmth(light?.warmth ?? 0);
   s.rig.resize(s.camera.aspect);
   let box = null;
   if (fitRect) {

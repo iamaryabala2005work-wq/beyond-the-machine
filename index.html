@@ -154,11 +154,18 @@
        the camera follows the scroll position; scrolling back above the story returns it to the hero as it was.
        The page always scrolls natively. Without 3D, the stage shows the poster and the chapters read the same. -->
   <div class="story" id="story" data-story>
-    <div class="story__stage" data-story-stage data-state="poster" aria-hidden="true">
+    <div class="story__stage" data-story-stage data-state="poster" data-shot="name" aria-hidden="true">
       <!-- Chapter III's car as a still (scripts/render-posters.mjs, framed and lit as the live chapter frames
            and lights it at the end of its light reveal), faded up from the black page by --lp. The stage
            shows it before the live car arrives from the hero and when there is no 3D. -->
       <div class="story__stills" data-story-poster>
+        <!-- Chapter I's car, a low front view in its warm light, cut to the box the live car is fitted into;
+             src/story/chapters/name.js places it in the chapter's free band and scales it with the push-in,
+             exactly as it frames the live car. One render per paint (src/story/paint.js). -->
+        <img class="story__still story__still--name" data-still="name"
+             data-still-base="/vehicle/posters/name" data-still-widths="800,1600" data-still-default="midnight"
+             src="/vehicle/posters/name-midnight-1600.webp" srcset="/vehicle/posters/name-midnight-800.webp 800w, /vehicle/posters/name-midnight-1600.webp 1600w"
+             sizes="(max-width: 639px) 100vw, 50vw" width="2762" height="1185" alt="" decoding="async">
         <picture>
           <source media="(min-width: 900px)" srcset="/vehicle/posters/power-split-lit.webp">
           <img class="story__still story__still--lit story__still--power" src="/vehicle/posters/power-stack-lit.webp" alt="" loading="lazy" decoding="async">
@@ -183,10 +190,30 @@
       <span class="hud-tag story__standin" data-story-standin hidden>Stand-in 3D model<span class="hud-tag__dot"></span></span>
     </div>
 
+    <!-- I The Name (src/story/chapters/name.js). The words are Koenigsegg's own press release's ("The man
+         behind the name"), closely paraphrased; it is cited at the foot. -->
+    <section class="chapter chapter--name" id="name" data-chapter="name" aria-labelledby="name-h">
+      <div class="chapter__frame">
+        <div class="wrap chapter__in name__head" data-name-head>
+          <p class="chapter__mark" aria-hidden="true"><span>I</span><span class="chapter__dash"></span>The Name</p>
+          <div class="name__col" data-name-col>
+            <h2 class="name__word" id="name-h"><span class="sr-only">Jesko</span><span class="name__letters" aria-hidden="true"><span class="name__letter" style="--i:0">J</span><span class="name__letter" style="--i:1">E</span><span class="name__letter" style="--i:2">S</span><span class="name__letter" style="--i:3">K</span><span class="name__letter" style="--i:4">O</span></span></h2>
+            <div class="name__lines">
+              <p class="name__line" style="--i:0">Named for Jesko von Koenigsegg,</p>
+              <p class="name__line" style="--i:1">father of founder and CEO Christian von Koenigsegg.</p>
+              <p class="name__line" style="--i:2">He and his wife, Brita, were at the Geneva Motor Show to see it introduced.</p>
+            </div>
+            <p class="name__date">Geneva <span class="name__sep" aria-hidden="true">·</span><span class="sr-only">,</span> 2019</p>
+          </div>
+        </div>
+        <p class="wrap chapter__source" data-name-foot>Source: <a href="https://news.cision.com/koenigsegg/r/all-new-koenigsegg-jesko-announced-at-geneva-2019,c2881595" rel="noopener">All-New Koenigsegg Jesko announced at Geneva 2019</a>, Koenigsegg press release, 5 March 2019</p>
+      </div>
+    </section>
+
     <section class="chapter chapter--power" id="power" data-chapter="power" aria-labelledby="power-h">
       <div class="chapter__frame">
         <div class="wrap chapter__in">
-          <p class="chapter__mark" id="power-h"><span aria-hidden="true">III</span><span class="chapter__dash" aria-hidden="true"></span>Power</p>
+          <p class="chapter__mark" id="power-h"><span aria-hidden="true">II</span><span class="chapter__dash" aria-hidden="true"></span>Power</p>
           <p class="power__figure">
             <span class="power__count" data-count aria-hidden="true">1,600</span>
             <span class="sr-only">1,600 horsepower on E85</span>
@@ -203,7 +230,7 @@
     <section class="chapter chapter--yours" id="yours" data-chapter="yours" aria-labelledby="yours-h">
       <div class="chapter__frame">
         <div class="wrap chapter__in yours__head" data-yours-head>
-          <p class="chapter__mark" aria-hidden="true"><span>V</span><span class="chapter__dash"></span>Yours</p>
+          <p class="chapter__mark" aria-hidden="true"><span>III</span><span class="chapter__dash"></span>Yours</p>
           <h2 class="yours__title" id="yours-h">Yours</h2>
         </div>
         <div class="wrap yours__controls" data-yours-controls>
@@ -226,7 +253,7 @@
     <section class="chapter chapter--close" id="close" data-chapter="close" aria-labelledby="close-h">
       <div class="chapter__frame">
         <div class="wrap chapter__in" data-close-head>
-          <p class="chapter__mark" id="close-h"><span aria-hidden="true">VI</span><span class="chapter__dash" aria-hidden="true"></span>Close</p>
+          <p class="chapter__mark" id="close-h"><span aria-hidden="true">IV</span><span class="chapter__dash" aria-hidden="true"></span>Close</p>
         </div>
       </div>
     </section>
@@ -253,6 +280,7 @@
       <ul>
         <li><a href="https://www.koenigsegg.com/model/jesko-absolut" rel="noopener">Jesko Absolut model page</a><span class="site-footer__where">koenigsegg.com</span></li>
         <li><a href="https://www.koenigsegg.com/technical-specifications-jesko-absolut" rel="noopener">Jesko Absolut technical specifications</a><span class="site-footer__where">koenigsegg.com</span></li>
+        <li><a href="https://news.cision.com/koenigsegg/r/all-new-koenigsegg-jesko-announced-at-geneva-2019,c2881595" rel="noopener">All-New Koenigsegg Jesko announced at Geneva 2019</a><span class="site-footer__where">Koenigsegg press release, 5 March 2019</span></li>
       </ul>
     </div>
     <div class="footer__legal site-footer__legal">

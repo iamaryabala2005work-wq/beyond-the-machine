@@ -55,13 +55,19 @@
 // car is in; and, when a chapter has them, measure() on resize, state(state, viewer) when the stage's
 // state changes, enter(viewer) when the car moves into the story, setReduced(r).
 //
+// A chapter whose car must be gone before the next chapter's words rise to where it sits (its presence()
+// hook: Chapter I, whose car sits low on the stage) reports how much of the car is there as its frame lets
+// go (its exit x). It is written to the stage as --lx, and the canvas and the stills fade with it
+// (story.css), on top of --lv. Every other chapter's car is fully there (1).
+//
 // Reduced motion: nothing is scrubbed or smoothed. The camera changes shot as above but at once (no
 // fades), the words fade in over 150 ms at their thresholds, and numbers show their final value.
+import { createName } from './chapters/name.js';
 import { createPower } from './chapters/power.js';
 import { createYours } from './chapters/yours.js';
 import { createClose } from './chapters/close.js';
 
-const CHAPTERS = { power: createPower, yours: createYours, close: createClose };
+const CHAPTERS = { name: createName, power: createPower, yours: createYours, close: createClose };
 const SHOT_AT = 0.5;      // a chapter takes the car once it is this far into the screen (its entry)
 const ARRIVED = 0.98;     // its frame has landed (data-arrived): words that must not cross the car come in then
 const FADE_MS = 270;      // the canvas's fade out before a reshoot (story.css: 250 ms)
@@ -106,7 +112,7 @@ export function initStory() {
   let camFresh = true;       // the camera starts where the scroll is, not eased in from elsewhere
   let reshooting = false;    // the canvas is hidden for a change of shot: the stills stay away too
   let shown = false;         // the live canvas has drawn the chapter's pose and is shown
-  let lastLp = '', lastLv = '';
+  let lastLp = '', lastLv = '', lastLx = '';
 
   let lastState = '';
   function setState() {
@@ -198,6 +204,7 @@ export function initStory() {
     shot = c;
     camChapter = c; camP = qOf(c); camV = 0; camAt = now; camFresh = false;
     viewer.setSweep?.(0, 0); // Chapter VI's light sweep is its own: off for every other shot
+    viewer.setWarmth?.(0);   // and Chapter I's warm grade
     c.impl.camera(viewer, reduced ? 1 : camP, { reduced, fresh: true });
     setLv(c.impl.level?.(Math.max(0, c.p), { reduced }) ?? 1);
   }
@@ -234,6 +241,7 @@ export function initStory() {
     viewer.setKey(1);
     viewer.setSilhouette(0);
     viewer.setSweep?.(0, 0);
+    viewer.setWarmth?.(0);
     viewer.setMode('story'); // out of a hands-on chapter's turn mode, so the hero's camera is put back whole
     viewer.setMode('orbit');
     viewer.restore(snap);
@@ -337,8 +345,10 @@ export function initStory() {
       }
       if (shot) {
         if (reduced) {
-          // a cut, not a move: the shot is set once (takeShot); a chapter whose camera follows p in
-          // steps (none yet) would be called here
+          // a cut, not a move: the shot is set at its end (takeShot) and held there. It is asked again
+          // every tick, at the same p, so a new canvas size (the first frame after the canvas moves in,
+          // a resize) refits it; an unchanged pose draws nothing (rig.pose, viewer.fitShot's cache).
+          shot.impl.camera(viewer, 1, { reduced });
           setLv(shot.impl.level?.(1, { reduced }) ?? 1);
         } else {
           if (camChapter !== shot || camFresh) { camChapter = shot; camP = qOf(shot); camV = 0; camAt = now; camFresh = false; }
@@ -353,6 +363,12 @@ export function initStory() {
       camFresh = true;
     }
     setState();
+
+    // how much of the car is there as its chapter lets go (presence(), only Chapter I has one): the live
+    // car's chapter while it is in the story, else the stills'
+    const holder = inStory && !lost && shot ? shot : want;
+    const lx = (holder.impl.presence?.(Math.max(0, holder.x), { reduced }) ?? 1).toFixed(3);
+    if (lx !== lastLx) { lastLx = lx; stageEl.style.setProperty('--lx', lx); }
 
     // the stills' light level, straight from the scroll; not written while the live car hides them (a
     // style change every frame for images nobody sees)
@@ -370,6 +386,8 @@ export function initStory() {
 
   addEventListener('scroll', () => schedule(), { passive: true });
   addEventListener('resize', () => schedule(true));
+  // the web font changes the words' size, and with them the free bands the chapters fit the car into
+  document.fonts?.ready.then(() => schedule(true));
   new ResizeObserver(() => schedule(true)).observe(document.body);
   reducedQuery.addEventListener('change', () => {
     reduced = reducedQuery.matches;

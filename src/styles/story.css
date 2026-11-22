@@ -31,18 +31,23 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
    page, as the frames change over), never one over the other. */
 /* placed by yours.js; with its shadow margin it can be wider than the screen (the stage clips it), so the
    page's img max-width must not squeeze it out of shape */
-.story__still--yours, .story__still--close { inset: auto; left: 0; top: 0; width: 0; height: 0; max-width: none; max-height: none; opacity: 0; }
-.story__stage:is([data-shot="yours"], [data-shot="close"]) .story__still--power { opacity: 0; }
-.story__stage[data-shot="yours"] .story__still--yours, .story__stage[data-shot="close"] .story__still--close { opacity: 1; }
+.story__still--name, .story__still--yours, .story__still--close { inset: auto; left: 0; top: 0; width: 0; height: 0; max-width: none; max-height: none; opacity: 0; }
+.story__stage:is([data-shot="name"], [data-shot="yours"], [data-shot="close"]) .story__still--power { opacity: 0; }
+.story__stage[data-shot="name"] .story__still--name, .story__stage[data-shot="yours"] .story__still--yours, .story__stage[data-shot="close"] .story__still--close { opacity: 1; }
 @media (prefers-reduced-motion: no-preference) {
-  .story__still--power, .story__still--yours, .story__still--close { transition: opacity 200ms linear; }
-  .story__stage[data-shot="power"] .story__still--power, .story__stage[data-shot="yours"] .story__still--yours,
+  .story__still--name, .story__still--power, .story__still--yours, .story__still--close { transition: opacity 200ms linear; }
+  .story__stage[data-shot="name"] .story__still--name, .story__stage[data-shot="power"] .story__still--power, .story__stage[data-shot="yours"] .story__still--yours,
   .story__stage[data-shot="close"] .story__still--close { transition: opacity 260ms var(--ease-settle) 200ms; }
 }
+/* Chapter I's still follows the push-in by scale (name.js), about its own centre */
+.story__still--name { transform-origin: 50% 50%; }
 /* and on the live car (--lv, story.js): its unlit pixels are black, a shade off the page's own ground, so
    it is faded out entirely at the start of the reveal and fully there once a little light is up. The
    stand-in tag describes the car, so it comes with it. */
-.story__canvas, .story__standin { opacity: clamp(0, calc(var(--lv, 1) / .12), 1); }
+.story__canvas, .story__standin { opacity: calc(clamp(0, calc(var(--lv, 1) / .12), 1) * var(--lx, 1)); }
+/* and as Chapter I lets go (--lx, story.js: its presence), the car fades to the page before the next
+   chapter's words rise to where it sits; the stills with it */
+.story__stills { opacity: var(--lx, 1); }
 .story__standin { position: absolute; right: var(--gut); bottom: var(--s-5); }
 /* phones, where the tag sits at the top: while a chapter lets go (story.js data-between) the tag steps
    out, so its words rising past never run across it. From 640px it sits at the foot, clear of them. */
@@ -85,6 +90,54 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
 .story__stage[data-hands-on] .vehicle-stage__gl { pointer-events: auto; cursor: grab; }
 .story__stage[data-hands-on] .vehicle-stage__gl:active { cursor: grabbing; }
 
+/* ---- I The Name: the mark, the word, three lines and the date at the top (a left column from 900px), the
+   car in the free band under them (beside them from 900px), fitted there by name.js; the source at the
+   foot. Warm: the date's dot is the page's one warm signal (--concept-dot), as the light is. */
+.chapter--name { height: 340svh; pointer-events: none; }
+.chapter--name .chapter__frame { grid-template-columns: minmax(0, 1fr); }
+.name__col { width: max-content; max-width: 100%; }
+.name__word { margin: 0; font: var(--display-weight, 500) clamp(64px, min(12vw, 21svh), 208px)/.86 var(--font-display);
+  letter-spacing: var(--display-tracking-xl, -.045em); text-transform: uppercase; color: var(--p-ink); }
+.name__letters { display: inline-flex; }
+.name__lines { margin-top: var(--s-6); max-width: 34ch; }
+.name__line { margin: 0; font-size: clamp(17px, .5vw + 15px, 20px); line-height: 1.45; color: var(--p-ink); text-wrap: pretty; }
+.name__line:nth-child(3) { margin-top: var(--s-3); } /* the first two are one sentence */
+.name__line:nth-child(3) { color: var(--p-muted); }
+.name__date { margin: var(--s-5) 0 0; display: flex; align-items: center; gap: var(--s-3);
+  font: 400 13px/1 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--p-muted); }
+.name__sep { color: var(--concept-dot); }
+.chapter--name .chapter__source a { pointer-events: auto; }
+
+/* reveals. The mark comes in with the chapter as it rises (--e). Each letter of the word fades and rises
+   in turn over p 0.04..0.44 (--p); on desktop a 8px blur clears with it, on the mobile tier (as
+   src/vehicle/gate.js sorts it) none. The lines follow one at a time over 0.48..0.76, the date at 0.8. */
+.chapter--name .chapter__mark { --k: clamp(0, (var(--e, 1) - .35) / .45, 1); opacity: var(--k); }
+.name__letter { --k: clamp(0, (var(--p, 1) - .04 - var(--i) * .07) / .12, 1);
+  opacity: var(--k); translate: 0 calc((1 - var(--k)) * .16em); filter: blur(calc((1 - var(--k)) * 8px)); }
+.name__line { --k: clamp(0, (var(--p, 1) - .48 - var(--i) * .1) / .08, 1); opacity: var(--k); translate: 0 calc((1 - var(--k)) * 8px); }
+.name__date { --k: clamp(0, (var(--p, 1) - .8) / .08, 1); opacity: var(--k); translate: 0 calc((1 - var(--k)) * 8px); }
+@media (max-width: 639px), (pointer: coarse) {
+  .name__letter { filter: none; }
+}
+/* reduced motion: the whole word, every line and the date, at once; nothing moves */
+@media (prefers-reduced-motion: reduce) {
+  .chapter--name :is(.chapter__mark, .name__letter, .name__line, .name__date) { opacity: 1; translate: none; filter: none; }
+}
+
+/* from 900px the words keep a left column; the car takes the right (name.js) */
+@media (min-width: 900px) {
+  .name__col { max-width: 40vw; }
+  .name__word { font-size: clamp(88px, min(11vw, 20svh), 200px); }
+}
+/* phones: the word fills the width in the top third, the car sits low under the words */
+@media (max-width: 639px) {
+  .chapter--name { height: 380svh; }
+  .name__word { font-size: clamp(56px, 26.5vw, 140px); }
+  .name__lines { margin-top: var(--s-5); }
+  .name__line { font-size: 16px; }
+  .name__date { margin-top: var(--s-4); }
+}
+
 /* ---- III Power */
 .chapter--power { height: 380svh; }
 .power__figure { margin: 0; font: 400 clamp(96px, 13vw, 208px)/.9 var(--font-mono); letter-spacing: -.04em; color: var(--p-ink);
@@ -97,12 +150,14 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
 .power__petrol { margin: var(--s-6) 0 0; max-width: 30ch; font-size: clamp(17px, .5vw + 15px, 20px); line-height: 1.5; color: var(--p-ink); }
 
 /* reveals. The mark, the figure and the unit come in with the chapter as it rises into the screen (--e,
-   story.js), so Power starts the moment the hero leaves; they are whole by the time the chapter is 80% in.
+   story.js); they start once Chapter I's car has gone from the stage (name-look.js GONE_BY 0.22: this
+   entry is that chapter's exit), so the stage is never left empty between the two, and are whole by the
+   time the chapter is two thirds in.
    Desktop: the figure (the display element) sharpens out of a blur. The mobile tier (as src/vehicle/gate.js
    sorts it): no blur, which a phone draws as a grey smudge; the words fade and rise 12px instead.
    The petrol line rises 8px in over p 0.86..0.95, after the count has landed. */
 .power__figure, .power__unit, .chapter--power .chapter__mark {
-  --k: clamp(0, (var(--e, 1) - .35) / .45, 1);
+  --k: clamp(0, (var(--e, 1) - .24) / .42, 1);
   opacity: var(--k); }
 .power__figure { filter: blur(calc((1 - var(--k)) * 10px)); }
 @media (max-width: 639px), (pointer: coarse) {
