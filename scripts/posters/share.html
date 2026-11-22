@@ -4,7 +4,9 @@
 <meta charset="utf-8">
 <title>Share card</title>
 <!-- The link-preview card (public/share.jpg), 1200 x 630, captured by scripts/render-posters.mjs from the
-     freshly rendered hero poster. The site's palette and type; no maker's marks, the concept label kept. -->
+     freshly rendered Close still (Chapter IV's wide, low side view, in Midnight): the car in the dark under one
+     cool light, with the Close chapter's light sweep across it. The site's palette and type; no maker's marks,
+     the concept label kept. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@500&family=Geist+Mono:wght@400&display=block" rel="stylesheet">
@@ -12,26 +14,46 @@
   html, body { margin: 0; }
   body { width: 1200px; height: 630px; overflow: hidden; position: relative; background: #07090c; color: #e6ebf0;
     font-family: "Geist", system-ui, sans-serif; }
-  .glow { position: absolute; inset: 0; background: radial-gradient(60% 55% at 62% 70%, rgb(127 224 238 / .08), transparent 70%); }
-  .ring { position: absolute; left: 62%; top: 80%; width: 760px; aspect-ratio: 5.4 / 1; translate: -50% -50%; border-radius: 50%;
-    border: 1px solid rgb(127 224 238 / .3); }
-  .car { position: absolute; left: 62%; top: 56%; width: 720px; translate: -50% -50%; filter: drop-shadow(0 28px 28px rgb(0 0 0 / .55)); }
-  h1 { position: absolute; left: 64px; top: 56px; margin: 0; font-weight: 500; font-size: 64px; line-height: 1; letter-spacing: -0.045em;
+  /* one cool light from above, falling on the car and the floor */
+  .light { position: absolute; inset: 0; background:
+    radial-gradient(42% 60% at 54% 30%, rgb(230 235 240 / .07), transparent 70%),
+    radial-gradient(48% 16% at 52% 90%, rgb(127 224 238 / .10), transparent 72%); }
+  .floor { position: absolute; left: 10%; right: 6%; top: 571px; height: 1px;
+    background: linear-gradient(90deg, transparent, rgb(127 224 238 / .35) 35%, rgb(127 224 238 / .35) 65%, transparent); }
+  .car, .sweep { position: absolute; left: 50%; top: 274px; width: 1120px; aspect-ratio: var(--ar, 3.59); translate: -46% 0; }
+  .car { filter: drop-shadow(0 26px 24px rgb(0 0 0 / .6));
+    /* the still's floor shadow runs to its box: feathered at both ends, so no edge shows in the dark */
+    -webkit-mask: linear-gradient(90deg, transparent 2%, #000 9%, #000 93%, transparent 99%); mask: linear-gradient(90deg, transparent 2%, #000 9%, #000 93%, transparent 99%); }
+  /* the Close chapter's light sweep, held where it crosses the cabin, cut to the car's own outline */
+  .sweep { background: linear-gradient(100deg, transparent 38%, rgb(230 235 240 / .10) 47%, rgb(230 235 240 / .22) 50%, rgb(230 235 240 / .10) 53%, transparent 62%);
+    -webkit-mask: var(--car) center / contain no-repeat; mask: var(--car) center / contain no-repeat; mix-blend-mode: screen; }
+  .vignette { position: absolute; inset: 0; background: radial-gradient(120% 95% at 50% 55%, transparent 55%, rgb(0 0 0 / .65)); }
+  h1 { position: absolute; left: 64px; top: 58px; margin: 0; font-weight: 500; font-size: 76px; line-height: .94; letter-spacing: -0.045em;
     text-transform: uppercase; }
-  .tag { position: absolute; left: 64px; bottom: 52px; display: flex; gap: 10px; align-items: center;
-    font: 400 18px/1 "Geist Mono", ui-monospace, monospace; color: #8c97a3; }
+  .sub { position: absolute; left: 66px; top: 220px; margin: 0; font: 400 17px/1 "Geist Mono", ui-monospace, monospace; letter-spacing: .14em;
+    text-transform: uppercase; color: #8c97a3; }
+  .tag { position: absolute; right: 64px; top: 66px; margin: 0; display: flex; gap: 10px; align-items: center;
+    font: 400 17px/1 "Geist Mono", ui-monospace, monospace; color: #8c97a3; }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: #e2b25c; }
 </style>
 </head>
 <body>
-  <div class="glow"></div>
-  <div class="ring"></div>
+  <div class="light"></div>
+  <div class="floor"></div>
   <img class="car" id="car" alt="">
+  <div class="sweep" id="sweep"></div>
+  <div class="vignette"></div>
   <h1>Beyond the<br>machine.</h1>
+  <p class="sub">The Jesko Absolut · a concept in four chapters</p>
   <p class="tag">Unofficial concept<span class="dot"></span></p>
   <script>
-    // scripts/render-posters.mjs hands the hero render over as a data URL
-    window.setCar = (src) => { const car = document.getElementById('car'); car.src = src; return Promise.all([document.fonts.ready, car.decode()]); };
+    // scripts/render-posters.mjs hands the Close still over as a data URL
+    window.setCar = async (src) => {
+      const car = document.getElementById('car'); car.src = src; await car.decode();
+      document.body.style.setProperty('--car', `url("${src}")`);
+      document.body.style.setProperty('--ar', String(car.naturalWidth / car.naturalHeight));
+      await document.fonts.ready;
+    };
   </script>
 </body>
 </html>

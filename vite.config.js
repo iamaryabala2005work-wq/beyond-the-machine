@@ -19,14 +19,26 @@ function vehicleModelPreload() {
       const manifestUrl = html.match(/data-vehicle-model="([^"]+)"/)?.[1];
       if (!manifestUrl) return html;
       const { src } = JSON.parse(readFileSync(new URL(`./public${manifestUrl}`, import.meta.url), 'utf8'));
-      const code = `(()=>{const canRun3D=${canRun3D};const tierFor=${tierFor};if(!canRun3D())return;` +
+      // WebKit (Safari, and every browser on iOS) never hands a preload made `as=fetch` to the viewer's fetch():
+      // it downloaded the model twice (2.2 MB each, measured), so there the viewer's own request is the only one.
+      const code = `(()=>{const canRun3D=${canRun3D};const tierFor=${tierFor};if(!canRun3D()||/^Apple/.test(navigator.vendor))return;` +
+        // the preload only helps while it is ahead of the viewer: once the viewer's code is in (a warm cache), the
+        // viewer is already asking for the model itself and a preload now would go unused
         `const src=${JSON.stringify(src)};let done=false;const go=()=>{if(done)return;done=true;` +
+        `if(performance.getEntriesByType('resource').some(e=>/\\/viewer-[^/]*\\.js$/.test(e.name)))return;` +
         `const l=document.createElement('link');l.rel='preload';l.as='fetch';l.crossOrigin='anonymous';` +
         `l.href=src[tierFor()]??src.desktop;document.head.append(l)};` +
-        // load and error do not bubble, so they are caught on the way down; window load covers a page without a poster
-        `const poster=(e)=>{if(e.target.matches?.('[data-vehicle-poster]'))go()};` +
+        // load and error do not bubble, so they are caught on the way down; window load covers a page without a poster.
+        // The poster can load well before it is painted (render-blocking CSS still pending), so the model waits for
+        // the paint itself: the poster's largest-contentful-paint entry where the browser reports one (2 s at most,
+        // in case the poster is not the largest paint), else two frames after load.
+        `let watching=false;const painted=()=>{if(watching)return;watching=true;` +
+        `if(!PerformanceObserver.supportedEntryTypes?.includes('largest-contentful-paint')){requestAnimationFrame(()=>requestAnimationFrame(go));return}` +
+        `const t=setTimeout(go,2000);new PerformanceObserver((l,o)=>{if(l.getEntries().some(e=>e.element?.matches?.('[data-vehicle-poster]'))){o.disconnect();clearTimeout(t);go()}})` +
+        `.observe({type:'largest-contentful-paint',buffered:true})};` +
+        `const poster=(e)=>{if(e.target.matches?.('[data-vehicle-poster]'))painted()};` +
         `document.addEventListener('load',poster,true);document.addEventListener('error',poster,true);` +
-        `addEventListener('load',go)})()`;
+        `addEventListener('load',painted)})()`;
       return { html, tags: [{ tag: 'script', children: code, injectTo: 'head' }] };
     },
   };
@@ -56,10 +68,36 @@ function postersUpToDate() {
   };
 }
 
+// Absolute URLs for link previews and search: %SITE% in the pages becomes the production origin (canonical,
+// og:url, the sitemap) and %SELF% this deployment's own origin (the share image, so a preview's card shows that
+// preview's image). SITE_URL wins when set (the site's own domain); on Vercel the system variables give the
+// rest. Also writes robots.txt and sitemap.xml; a preview's robots.txt asks crawlers to stay out.
+function siteMeta() {
+  const env = process.env;
+  const https = (host) => host && `https://${host.replace(/^https?:\/\//, '').replace(/\/$/, '')}`;
+  const site = https(env.SITE_URL) || https(env.VERCEL_PROJECT_PRODUCTION_URL) || 'https://beyond-the-machine-codcect.vercel.app';
+  const preview = env.VERCEL_ENV === 'preview';
+  const self = (preview && https(env.VERCEL_BRANCH_URL || env.VERCEL_URL)) || site;
+  const pages = ['/', '/credits.html'];
+  return {
+    name: 'site-meta',
+    transformIndexHtml: (html) => html.replaceAll('%SITE%', site).replaceAll('%SELF%', self),
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'robots.txt', source: preview
+        ? 'User-agent: *\nDisallow: /\n'
+        : `User-agent: *\nAllow: /\n\nSitemap: ${site}/sitemap.xml\n` });
+      const today = new Date().toISOString().slice(0, 10);
+      this.emitFile({ type: 'asset', fileName: 'sitemap.xml', source: '<?xml version="1.0" encoding="UTF-8"?>\n' +
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+        pages.map((p) => `  <url><loc>${site}${p}</loc><lastmod>${today}</lastmod></url>\n`).join('') + '</urlset>\n' });
+    },
+  };
+}
+
 // The skill kit lives in public/assets and is served as plain files, so Vite's own build output goes to
 // _app/ to keep the two apart.
 export default defineConfig({
-  plugins: [postersUpToDate(), vehicleModelPreload()],
+  plugins: [postersUpToDate(), vehicleModelPreload(), siteMeta()],
   build: {
     assetsDir: '_app',
     // the three.js viewer is a lazy chunk (~160 kB gzip) loaded after first paint, never on the critical path

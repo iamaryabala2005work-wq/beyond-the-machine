@@ -42,6 +42,9 @@
 [data-vehicle-mode="live"] > .vehicle-stage__poster { opacity: 0; visibility: hidden; }
 /* the scan is drawn against the poster render's outline; with the 3D car it waits for its own pass */
 [data-vehicle-mode="live"] > .vehicle-stage__scan { display: none; }
+/* the light's kit pause button: live, the light moves only with the car (stage.js), and the button sits in an
+   aria-hidden layer under the canvas where no pointer reaches it, so it is taken out of the tab order */
+.vehicle-stage[data-vehicle-mode="live"] > .vehicle-stage__light .loop-pause { visibility: hidden; }
 /* The hand-off from the poster to the car, on first load and after a restore: a cut in one frame. The
    canvas has drawn its first frame by then (stage.js), the same car at the same framing as the poster, and
    it takes the poster's place at once: one car on screen at every moment, never one fading over the other

@@ -197,10 +197,10 @@ try {
   await fittedStills('close', { shot: manifest.camera?.shots?.close, ...CLOSE_STILL }, CLOSE_PAD, CLOSE_LIGHT, 1);
   written.shapes = shapes;
 
-  // the link-preview card: the new hero poster on the site's ground, the title and the concept label
+  // the link-preview card: the new Close still (Midnight) in the dark, the title and the concept label
   {
     const card = await browser.newPage({ viewport: { width: 1200, height: 630 } });
-    const carUrl = `data:image/webp;base64,${(await sharp(written.heroMaster).resize({ width: 1600 }).webp(WEBP).toBuffer()).toString('base64')}`;
+    const carUrl = `data:image/webp;base64,${(await readFile(`${root}${OUT}/close-midnight-1600.webp`)).toString('base64')}`;
     await card.goto(`${base}/scripts/posters/share.html`);
     await card.evaluate((src) => window.setCar(src), carUrl);
     const shot = await card.screenshot({ type: 'png' });

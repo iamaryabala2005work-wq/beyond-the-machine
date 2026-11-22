@@ -22,7 +22,6 @@ export default function (root, opts, lib) {
   const dur = opts.duration || 1400, stagger = opts.stagger ?? 90;
   const built = nums.map(el => {
     const text = el.textContent.trim();
-    el.setAttribute('aria-label', text);
     el.classList.add('mo-cr');
     const frag = document.createDocumentFragment();
     const cols = [];
@@ -47,6 +46,11 @@ export default function (root, opts, lib) {
         frag.append(s);
       }
     }
+    // the figure for assistive tech: visually hidden text (an aria-label on a <p> is not read by every screen reader)
+    const said = document.createElement('span');
+    said.className = 'sr-only';
+    said.textContent = text;
+    frag.append(said);
     el.textContent = '';
     el.append(frag);
     return { el, cols };
