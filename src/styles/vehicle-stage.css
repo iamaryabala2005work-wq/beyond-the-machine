@@ -33,8 +33,8 @@
 .vehicle-stage__canvas:empty { display: none; }
 .hero__stage.vehicle-stage > .vehicle-stage__poster { z-index: 3; filter: drop-shadow(0 40px 40px rgb(0 0 0 / .55)); pointer-events: none; }
 
-/* ---- the 3D viewer (src/vehicle/viewer). It fades in over the poster once its first frame is drawn;
-   the poster then fades out and stays in the DOM as the fallback. */
+/* ---- the 3D viewer (src/vehicle/viewer). It takes the poster's place once its first frame is drawn;
+   the poster stays in the DOM, hidden, as the fallback. */
 .vehicle-stage__gl { display: block; width: 100%; height: 100%; opacity: 0; cursor: grab; outline: none; border-radius: var(--r-md, 12px); }
 .vehicle-stage__gl:active { cursor: grabbing; }
 .vehicle-stage__gl:focus-visible { outline: 2px solid var(--p-action); outline-offset: -2px; }
@@ -42,19 +42,10 @@
 [data-vehicle-mode="live"] > .vehicle-stage__poster { opacity: 0; visibility: hidden; }
 /* the scan is drawn against the poster render's outline; with the 3D car it waits for its own pass */
 [data-vehicle-mode="live"] > .vehicle-stage__scan { display: none; }
-/* The hand-off from the poster to the car, on first load and after a restore: a cross-fade with no dim
-   moment. The canvas (under the poster) is fully in within 250ms while the poster still covers it, and only
-   then does the poster fade away, so the picture never thins out over an empty stage. The poster fades by
-   animation, not transition: the kit's hero entrance (motion.css) sets the poster's `transition` to its own
-   scale and clip-path with a much stronger selector, which silently dropped the opacity fade here. */
-@media (prefers-reduced-motion: no-preference) {
-  .vehicle-stage__gl { transition: opacity 250ms var(--ease-settle); }
-  .hero__stage.vehicle-stage[data-vehicle-mode="live"] > .vehicle-stage__poster { animation: vehicle-poster-out 900ms both; }
-}
-@keyframes vehicle-poster-out {
-  0%, 28% { opacity: 1; visibility: visible; animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
-  100% { opacity: 0; visibility: hidden; }
-}
+/* The hand-off from the poster to the car, on first load and after a restore: a cut in one frame. The
+   canvas has drawn its first frame by then (stage.js), the same car at the same framing as the poster, and
+   it takes the poster's place at once: one car on screen at every moment, never one fading over the other
+   (src/story/story.js keeps the same rule in the story). */
 /* back to the poster after being live (the car's WebGL context was lost, stage.js): the poster returns at
    once (no animation applies that way) over a canvas with nothing to show, which takes no input meanwhile */
 [data-vehicle-mode="poster"] .vehicle-stage__gl { transition: none; pointer-events: none; }

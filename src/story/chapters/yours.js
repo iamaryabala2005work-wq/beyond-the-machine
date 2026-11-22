@@ -10,7 +10,9 @@
 //              that no heading of the car ever reaches either (fit.js); the band is measured on resize.
 //              It turns TURN degrees across the chapter (yours-look.js), eased by story.js's spring, and a
 //              drag or a sideways swipe turns it too (the rig's turn mode): the page's turn adds to the
-//              visitor's. The pose is set while the canvas is hidden (story.js), never swung into view.
+//              visitor's. The pose is set while the canvas is hidden (story.js), never swung into view. The
+//              turn ends on Chapter VI's heading (the full side view), and VI takes the live car on from
+//              wherever it is (story.js: pose(), resume()), so the two chapters show one car throughout.
 // still        the stage's stand-in for the live car (story.js) is a render of this shot in the paint the
 //              live car wears (one still per paint, paint.js), so a change of chapter never shows the car
 //              in another colour.
@@ -130,6 +132,23 @@ export function createYours(el, { stage }) {
       sync();
     },
     setReduced(r) { reduced = r; },
+    // the pose the car is in now, for the chapter that continues from this one (Chapter VI glides from it,
+    // story.js): the heading wherever the page and the visitor's hand have it
+    pose(v) {
+      const base = v.shot('yours');
+      const fit = lastFit ?? { zoom: base.zoom ?? 1, y: 0, x: 0 };
+      return { shot: { ...base, azimuth: v.azimuth() / DEG, zoom: fit.zoom }, shift: [fit.y, fit.x], key: LIGHT.key, silhouette: LIGHT.silhouette };
+    },
+    // the car handed back from Chapter VI, which has brought it back to exactly that pose: the turntable
+    // goes on from there (no new pose, so nothing moves)
+    resume(v) {
+      if (!lastFit) return;
+      v.setFrameShift(lastFit.y, lastFit.x);
+      v.setKey(LIGHT.key);
+      v.setSilhouette(LIGHT.silhouette);
+      v.setSweep(0, 0);
+      v.setMode('turn');
+    },
     camera(v, p, { reduced: r, fresh }) {
       if (!rect) measure();
       const base = v.shot('yours');

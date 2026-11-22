@@ -4,9 +4,12 @@
 //              it would cross the car, which is already in place on the pinned stage
 // car          the manifest's "close" shot, a wide, low, pure side view, in the paint the visitor chose in
 //              Chapter V (paint.js; the live car already wears it, so nothing changes on screen), fitted
-//              at that one heading into the band under the mark and over the stage's foot (fit.js). The
-//              camera does not move. Its pose is set while the canvas is hidden (story.js), never swung
-//              into view.
+//              at that one heading into the band under the mark and over the stage's foot (fit.js).
+//              The same live car comes on from Chapter V: as this frame rises in, the camera glides from
+//              where V left it (V's turntable ends on this heading; the framing, the height and the light
+//              ease across) to this shot, through story.js's spring, and holds it once the frame lands.
+//              No still and no fade on the way, so one car is on screen throughout. Arriving any other way
+//              (a jump), the shot is set while the canvas is hidden.
 // light        a little under the hero's, and a slow light sweep travels across the body with the scroll
 //              (close-look.js): one soft light moving round the car's flank, dark at both ends, so the car
 //              at rest is the still. story.js eases it through its damped spring; frames are drawn only
@@ -30,6 +33,10 @@ const MAX_H = 0.42;    // of the frame's height at most for the car's band, from
 const LOW = 0.03;      // phones: the band starts this share lower, so the car sits a little under the middle
                        // of the tall frame (a low horizon) and leaves less black under it as it scrolls away
 const phoneQuery = matchMedia('(max-width: 639px)');
+// the glide from Chapter V's pose over the entry: none until q JOIN_FROM (story.js hands the car back to
+// V below its JOIN_BACK, -0.95), all of it by q GLIDE_TO, before the frame lands; eased at both ends
+const JOIN_FROM = -0.95, GLIDE_TO = -0.12;
+const glide = (q) => { const t = Math.min(1, Math.max(0, (q - JOIN_FROM) / (GLIDE_TO - JOIN_FROM))); return t * t * (3 - 2 * t); };
 
 export function createClose(el, { stage }) {
   const frame = el.querySelector('.chapter__frame');
@@ -64,22 +71,40 @@ export function createClose(el, { stage }) {
     placeStill(still, side, top, W - side, bottom, STILL_PAD);
   }
 
+  let from = null; // the pose Chapter V left the live car in, while this chapter glides on from it
+
   return {
     update() {},
     measure,
     level: () => 1,
-    camera(v, p, { reduced }) {
+    // the live car comes on from Chapter V as it is (story.js): no reshoot, no still
+    from: 'yours',
+    join(pose) { from = pose ?? null; },
+    // q: -1..0 while the chapter rises in (its entry), then p. The car glides from V's pose to this shot
+    // over the entry (eased; none of it before q JOIN_FROM, so story.js can hand it back from there), and
+    // is on the shot by the time the frame lands; the sweep runs over p.
+    camera(v, q, { reduced, fresh }) {
       if (!rect) measure();
+      if (fresh) from = null; // posed while hidden: straight onto the shot
       const base = v.shot('close');
       const fit = v.fitShot(base, rect, { steps: 1 });
       if (!fit) return;
       const light = reduced ? LIGHT_REDUCED : LIGHT;
-      v.setFrameShift(fit.y, fit.x);
-      v.setKey(light.key);
-      v.setSilhouette(light.silhouette);
       const shot = { ...base, zoom: fit.zoom };
-      v.pose(shot, shot, 0);
-      const s = reduced ? { t: 0, level: 0 } : sweepAt(p);
+      const k = from ? glide(q) : 1;
+      const mix = (a, b) => a + (b - a) * k;
+      if (k < 1) {
+        v.setFrameShift(mix(from.shift[0], fit.y), mix(from.shift[1], fit.x));
+        v.setKey(mix(from.key, light.key));
+        v.setSilhouette(mix(from.silhouette, light.silhouette));
+        v.pose(from.shot, shot, k);
+      } else {
+        v.setFrameShift(fit.y, fit.x);
+        v.setKey(light.key);
+        v.setSilhouette(light.silhouette);
+        v.pose(shot, shot, 0);
+      }
+      const s = reduced || q <= 0 ? { t: 0, level: 0 } : sweepAt(q);
       v.setSweep(s.t, s.level);
     },
   };

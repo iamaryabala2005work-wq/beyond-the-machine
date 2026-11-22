@@ -26,18 +26,18 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
 .story__still { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 /* the light reveal on the still: up from the black page by --lp (story.js; 1 without script) */
 .story__still--lit { opacity: var(--lp, 1); }
-/* one still per chapter: the stage shows the one whose chapter has the car (data-shot, story.js). A change
-   of chapter brings the next still in over the last, which goes only once it is covered, so the stage never
-   shows an empty moment between them. */
+/* one still per chapter: the stage shows the one whose chapter has the car (data-shot, story.js). One car
+   at a time: on a change of chapter the last still goes before the next comes in (a brief dip to the black
+   page, as the frames change over), never one over the other. */
 /* placed by yours.js; with its shadow margin it can be wider than the screen (the stage clips it), so the
    page's img max-width must not squeeze it out of shape */
 .story__still--yours, .story__still--close { inset: auto; left: 0; top: 0; width: 0; height: 0; max-width: none; max-height: none; opacity: 0; }
 .story__stage:is([data-shot="yours"], [data-shot="close"]) .story__still--power { opacity: 0; }
 .story__stage[data-shot="yours"] .story__still--yours, .story__stage[data-shot="close"] .story__still--close { opacity: 1; }
 @media (prefers-reduced-motion: no-preference) {
-  .story__still--power, .story__still--yours, .story__still--close { transition: opacity 300ms linear 400ms; }
+  .story__still--power, .story__still--yours, .story__still--close { transition: opacity 200ms linear; }
   .story__stage[data-shot="power"] .story__still--power, .story__stage[data-shot="yours"] .story__still--yours,
-  .story__stage[data-shot="close"] .story__still--close { transition: opacity 400ms var(--ease-settle); }
+  .story__stage[data-shot="close"] .story__still--close { transition: opacity 260ms var(--ease-settle) 200ms; }
 }
 /* and on the live car (--lv, story.js): its unlit pixels are black, a shade off the page's own ground, so
    it is faded out entirely at the start of the reveal and fully there once a little light is up. The
@@ -51,16 +51,19 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
 
 /* states (story.js): poster = no live 3D (none on this device, still loading, failed, or the context lost);
    waiting = the 3D car is still in the hero; entering = it has moved here and is drawing the chapter's
-   pose, still hidden; live = it is here and shown. The stage is never empty: until the live car is
-   shown, the stills stand in at the same framing and light. */
+   pose, still hidden, over the still; reshoot = it is fading out to the page, or hidden, to change shot;
+   live = it is here and shown.
+   Never two cars: the stills show only while the canvas is fully hidden (waiting, entering, poster).
+   entering -> live is a cut in one frame: the canvas, which has drawn the still's own picture, takes its
+   place, and the stills leave the compositor (images kept at opacity 0 still cost every frame).
+   live -> reshoot: the canvas fades out to the black page with no still under it; reshoot -> live
+   (data-reveal="fade"): it fades back in, from the page. */
 .story__stage .vehicle-stage__gl { opacity: 0; }
 .story__stage[data-state="live"] .vehicle-stage__gl { opacity: 1; }
-/* live: the stills go once the canvas has faded in over them (both at once would dip through dark), and
-   leave the compositor entirely (two full-screen images kept at opacity 0 still cost every frame) */
-.story__stage[data-state="live"] .story__stills { opacity: 0; visibility: hidden; }
+.story__stage:is([data-state="live"], [data-state="reshoot"]) .story__stills { opacity: 0; visibility: hidden; }
 @media (prefers-reduced-motion: no-preference) {
-  .story__stage .vehicle-stage__gl { transition: opacity 400ms var(--ease-settle); }
-  .story__stage[data-state="live"] .story__stills { transition: opacity 0s linear 450ms, visibility 0s linear 450ms; }
+  .story__stage[data-state="reshoot"] .vehicle-stage__gl { transition: opacity 250ms var(--ease-settle); }
+  .story__stage[data-state="live"][data-reveal="fade"] .vehicle-stage__gl { transition: opacity 320ms var(--ease-settle); }
 }
 
 /* ---- a chapter: a tall section whose frame stays pinned for (height - 100svh) of scroll */
