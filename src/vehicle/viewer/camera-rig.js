@@ -64,12 +64,20 @@ export function createRig({ camera, canvas, stage, box, config, reducedMotion, o
     }
     return d;
   }
+  // the visitor's limits (manifest camera.limits) hold in orbit mode; the story frames its own shots, so
+  // in story mode they are opened (OrbitControls.update() would otherwise clamp every pose to them)
+  function applyLimits() {
+    const story = mode === 'story';
+    controls.minPolarAngle = (story ? 1 : limits.polarMin) * DEG;
+    controls.maxPolarAngle = (story ? 179 : limits.polarMax) * DEG;
+    controls.minDistance = fitDistance * (story ? 0.05 : limits.zoomMin);
+    controls.maxDistance = fitDistance * (story ? 20 : limits.zoomMax);
+  }
   function resize(aspect) {
     const ratio = camera.position.distanceTo(controls.target) / fitDistance;
     fitDistance = computeFit(aspect);
-    controls.minDistance = fitDistance * limits.zoomMin;
-    controls.maxDistance = fitDistance * limits.zoomMax;
-    place(spherical(), fitDistance * THREE.MathUtils.clamp(ratio, limits.zoomMin, limits.zoomMax));
+    applyLimits();
+    place(spherical(), fitDistance * (mode === 'story' ? ratio : THREE.MathUtils.clamp(ratio, limits.zoomMin, limits.zoomMax)));
   }
 
   const spherical = () => new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));
@@ -240,6 +248,7 @@ export function createRig({ camera, canvas, stage, box, config, reducedMotion, o
     tween = null; spin = 0; touch = null;
     controls.enabled = mode === 'orbit';
     canvas.tabIndex = mode === 'orbit' ? 0 : -1;
+    applyLimits();
     lastPose = '';
   }
   // the orbit camera as it stands (or where its running move will end), to put back after the story

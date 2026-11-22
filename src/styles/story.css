@@ -57,7 +57,7 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
 .power__count { display: inline-block; width: 5ch; text-align: right; }
 .power__unit { margin: var(--s-4) 0 0; font: 400 15px/1 var(--font-mono); letter-spacing: .14em; color: var(--p-muted); }
 .power__sep { color: var(--optic); }
-.power__petrol { margin: var(--s-6) 0 0; max-width: 38ch; font-size: clamp(17px, .5vw + 15px, 20px); line-height: 1.5; color: var(--p-ink); }
+.power__petrol { margin: var(--s-6) 0 0; max-width: 30ch; font-size: clamp(17px, .5vw + 15px, 20px); line-height: 1.5; color: var(--p-ink); }
 
 /* reveals, scrubbed by --p: the figure (the display element here) sharpens over the first 25%; the
    petrol line rises 8px in over 0.7..0.8 */
@@ -76,8 +76,15 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
   .story:not([data-story-ready]) :is(.power__figure, .power__unit, .chapter__mark, .power__petrol) { opacity: 1; }
 }
 
+/* composition: from 900px the words keep a left column (the camera frames the car in the right half,
+   chapters/power.js); below that they stay at the top and the car sits under them */
+@media (min-width: 900px) {
+  .chapter--power .chapter__in > * { max-width: 42vw; }
+  .chapter--power .power__figure { font-size: clamp(88px, 9.5vw, 168px); }
+  .story__poster { width: min(48vw, 760px); bottom: 18svh; }
+}
 @media (max-width: 639px) {
-  .story__poster { right: auto; left: 4vw; width: 92vw; bottom: 14svh; }
+  .story__poster { right: auto; left: 4vw; width: 92vw; bottom: 10svh; }
   .chapter--power { height: 160svh; }
   .power__figure { font-size: clamp(72px, 22vw, 200px); }
   .power__unit { font-size: 13px; }

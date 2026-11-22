@@ -38,6 +38,7 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
 
   let rig, lighting, model, manifest = null, raf = 0, visible = true, destroyed = false, offsetY = 0, offsetYCompact = 0;
   let frameShift = null; // the story's own vertical framing (a fraction of the height), or null for the manifest's
+  let frameShiftX = 0;   // and its horizontal framing (a fraction of the width; positive moves the car right)
   const wide = matchMedia('(min-width: 1024px)');
   const accent = getComputedStyle(stage).getPropertyValue('--optic').trim() || '#7fe0ee';
 
@@ -196,7 +197,7 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
     // From 1024px the view controls sit under the car, so it is lifted clear of them; below that they sit
     // at the top of the stage and the car keeps offsetYCompact, settled on the rings.
     const shift = frameShift ?? (wide.matches ? offsetY : offsetYCompact);
-    camera.setViewOffset(w, h, 0, -h * shift, w, h);
+    camera.setViewOffset(w, h, -w * frameShiftX, -h * shift, w, h);
     camera.updateProjectionMatrix();
     rig?.resize(camera.aspect);
     invalidate();
@@ -310,8 +311,11 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
     restore: (snap) => rig?.restore(snap),
     // dims the studio light for the story (1 = the hero's)
     setKey(level) { if (lighting?.setKey(level)) invalidate(); },
-    // shifts the car in the frame for the story (a fraction of the height; negative lifts it), null = the manifest's
-    setFrameShift(v) { if (frameShift === v) return; frameShift = v; resize(); },
+    // shifts the car in the frame for the story: y a fraction of the height (negative lifts it, null = the
+    // manifest's), x a fraction of the width (positive moves it right)
+    setFrameShift(v, x = 0) { if (frameShift === v && frameShiftX === x) return; frameShift = v; frameShiftX = x; resize(); },
+    // the story's silhouette light, 0..1: a cool rim along the roofline and a soft glow on the floor (0 = off, as in the hero)
+    setSilhouette(level) { if (lighting?.setSilhouette(level)) invalidate(); },
     // f(true) when the car starts moving, f(false) when it comes to rest; called once at once with the
     // current state. Returns a function that unsubscribes.
     onActivity: (f) => { activityListeners.add(f); f(active); return () => activityListeners.delete(f); },

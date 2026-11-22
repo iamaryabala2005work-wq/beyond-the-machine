@@ -89,6 +89,7 @@ export function initStory() {
     homeMarker.after(host);
     viewer.setFrameShift(null);
     viewer.setKey(1);
+    viewer.setSilhouette(0);
     viewer.setMode('orbit');
     viewer.restore(snap);
     snap = null;
