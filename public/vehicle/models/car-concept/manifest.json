@@ -35,11 +35,7 @@
     "paint": {
       "match": "^Paint 1",
       "set": {
-        "color": "#18213a",
-        "metalness": 0.55,
-        "roughness": 0.34,
         "clearcoat": 1,
-        "clearcoatRoughness": 0.06,
         "iridescence": 0
       }
     },
@@ -79,6 +75,62 @@
         "color": "#1e1e1e"
       }
     }
+  },
+  "variants": {
+    "$comment": "Paint variants for Chapter V (src/story/chapters/yours.js), applied to the material materials.paint matches; the default is the car's paint everywhere else and in every poster. Our own descriptive names, not factory colours. A variant may set only color, metalness, roughness and clearcoatRoughness (scripts/build-model.mjs checks it), so a change never recompiles a shader.",
+    "paint": [
+      {
+        "id": "midnight",
+        "label": "Midnight",
+        "default": true,
+        "set": {
+          "color": "#18213a",
+          "metalness": 0.55,
+          "roughness": 0.34,
+          "clearcoatRoughness": 0.06
+        }
+      },
+      {
+        "id": "graphite",
+        "label": "Graphite",
+        "set": {
+          "color": "#2a2d31",
+          "metalness": 0.6,
+          "roughness": 0.3,
+          "clearcoatRoughness": 0.08
+        }
+      },
+      {
+        "id": "ice",
+        "label": "Ice",
+        "set": {
+          "color": "#b9c6cf",
+          "metalness": 0.5,
+          "roughness": 0.26,
+          "clearcoatRoughness": 0.05
+        }
+      },
+      {
+        "id": "bone",
+        "label": "Bone",
+        "set": {
+          "color": "#cfc6b4",
+          "metalness": 0.12,
+          "roughness": 0.42,
+          "clearcoatRoughness": 0.08
+        }
+      },
+      {
+        "id": "ember",
+        "label": "Ember",
+        "set": {
+          "color": "#b3400f",
+          "metalness": 0.35,
+          "roughness": 0.3,
+          "clearcoatRoughness": 0.05
+        }
+      }
+    ]
   },
   "parts": {
     "wheels": [
@@ -141,6 +193,11 @@
         "compact": {
           "zoom": 1.15
         }
+      },
+      "yours": {
+        "azimuth": -38,
+        "polar": 76,
+        "zoom": 1.0
       }
     }
   },

@@ -38,6 +38,10 @@ export async function loadModel(manifest, tier, onProgress, { anisotropy = 1 } =
   const hidden = new Set((manifest.hide ?? []).map(nodeName));
   const finishes = Object.values(manifest.materials ?? {}).map((f) => ({ re: new RegExp(f.match), set: f.set ?? {} }));
   const done = new Set();
+  // the paint: the materials the manifest's materials.paint finish matches, in the default variant
+  const paintRe = manifest.materials?.paint?.match ? new RegExp(manifest.materials.paint.match) : null;
+  const paint = [];
+  const variant = defaultPaint(manifest);
   car.traverse((o) => {
     if (hidden.has(o.name)) o.visible = false;
     if (!o.isMesh) return;
@@ -46,6 +50,7 @@ export async function loadModel(manifest, tier, onProgress, { anisotropy = 1 } =
       done.add(m);
       const finish = finishes.find((f) => f.re.test(m.name));
       if (finish) applyFinish(m, finish.set);
+      if (paintRe?.test(m.name)) { paint.push(m); if (variant) applyFinish(m, variant.set); }
       // transmission costs a second render pass each frame; the mobile tier never pays it
       if (tier === 'mobile' && m.transmission > 0) { m.transmission = 0; m.transparent = true; m.opacity = Math.min(m.opacity, 0.45); }
       // sharper textures on surfaces seen at an angle (hood, floor, tyres); set before the first upload
@@ -54,7 +59,14 @@ export async function loadModel(manifest, tier, onProgress, { anisotropy = 1 } =
   });
 
   root.updateMatrixWorld(true);
-  return { root, box: new THREE.Box3().setFromObject(root), parts: indexParts(car, manifest.parts ?? {}) };
+  return { root, box: new THREE.Box3().setFromObject(root), parts: indexParts(car, manifest.parts ?? {}), paint, points: samplePoints(root) };
+}
+
+// the manifest's paint variants (variants.paint) and the one marked default (else the first)
+export const paintVariants = (manifest) => manifest.variants?.paint ?? [];
+export function defaultPaint(manifest) {
+  const list = paintVariants(manifest);
+  return list.find((v) => v.default) ?? list[0] ?? null;
 }
 
 function applyFinish(material, set) {
@@ -63,6 +75,26 @@ function applyFinish(material, set) {
     else if (key in material) material[key] = value;
   }
   material.needsUpdate = true;
+}
+
+// about `budget` points spread over the car's visible meshes, in the root's space: what fit.js projects
+// to find where the car's silhouette lands on screen (the bounding box's corners overstate it)
+function samplePoints(root, budget = 3000) {
+  const meshes = [];
+  let total = 0;
+  const shown = (o) => { for (let p = o; p; p = p.parent) if (!p.visible) return false; return true; };
+  root.traverse((o) => { if (o.isMesh && o.geometry?.attributes.position && shown(o)) { meshes.push(o); total += o.geometry.attributes.position.count; } });
+  const step = Math.max(1, Math.ceil(total / budget));
+  const out = [];
+  const v = new THREE.Vector3();
+  for (const m of meshes) {
+    const pos = m.geometry.attributes.position;
+    for (let i = 0; i < pos.count; i += step) {
+      v.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld);
+      out.push(v.x, v.y, v.z);
+    }
+  }
+  return new Float32Array(out);
 }
 
 // parts by role, for later phases (wheels, doors); missing names are simply absent

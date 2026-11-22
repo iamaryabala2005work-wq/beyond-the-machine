@@ -5,12 +5,18 @@
 // comes from its manifest.json. Rendering is on demand: a frame is drawn only while something moves
 // (a drag, damping, a preset, the light easing), and never while the hero is off screen.
 import * as THREE from 'three';
-import { loadManifest, loadModel, disposeObject } from './model.js';
+import { loadManifest, loadModel, disposeObject, paintVariants, defaultPaint } from './model.js';
 import { createRig } from './camera-rig.js';
 import { createLighting } from './lighting.js';
 import { MOBILE_QUALITY, qualityLevels, createGovernor } from './quality.js';
+import { fitTurntable } from './fit.js';
 
 const MAX_ANISOTROPY = 8;
+const PAINT_MS = 600; // a change of paint blends over this long (reduced motion: at once)
+const PAINT_KEYS = ['metalness', 'roughness', 'clearcoatRoughness'];
+// the page's settle curve (tokens.css --ease-settle, cubic-bezier(.22, 1, .36, 1)), closely: a quick
+// start that comes to rest gently
+const settle = (t) => 1 - (1 - t) ** 4;
 
 export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, onProgress }) {
   const mobile = tier === 'mobile';
@@ -110,6 +116,7 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
     if (!rig) { setActive(false); return; }
     renders++;
     const moving = rig.update(now);
+    const painting = stepPaint(now);
     const lit = lighting.update(rig.azimuth());
     if (!mobile) {
       renderer.render(scene, camera);
@@ -122,11 +129,42 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
       if (timed) gpuTimer.end();
       adaptMobile(now, cpuMs);
     }
-    if (moving || lit) invalidate();
+    if (moving || lit || painting) invalidate();
     else {
       setActive(false);
       if (mobile) rest();
     }
+  }
+
+  // ---- paint (Chapter V): the manifest's variants.paint, on the materials its materials.paint matches.
+  // Only the colour, metalness, roughness and clearcoat roughness change (build-model.mjs refuses a
+  // variant that changes anything else), and only as uniform values: no needsUpdate, so no shader is
+  // recompiled. A change blends from wherever the paint is (a change mid-blend carries on from there).
+  let paintId = null, paintTween = null, fitCache = null;
+  const paintFrom = { color: new THREE.Color() }, paintTo = { color: new THREE.Color() };
+  function setPaint(id, { instant = false } = {}) {
+    const v = paintVariants(manifest ?? {}).find((x) => x.id === id);
+    if (!v || !model?.paint.length) return false;
+    if (id === paintId && !paintTween) return true;
+    paintId = id;
+    const m0 = model.paint[0];
+    paintFrom.color.copy(m0.color);
+    paintTo.color.set(v.set.color ?? m0.color);
+    for (const k of PAINT_KEYS) { paintFrom[k] = m0[k]; paintTo[k] = v.set[k] ?? m0[k]; }
+    paintTween = { t0: performance.now(), dur: instant || reducedMotion ? 0 : PAINT_MS };
+    invalidate();
+    return true;
+  }
+  function stepPaint(now) {
+    if (!paintTween) return false;
+    const k = paintTween.dur ? Math.min(1, Math.max(0, (now - paintTween.t0) / paintTween.dur)) : 1;
+    const e = settle(k);
+    for (const m of model.paint) {
+      m.color.lerpColors(paintFrom.color, paintTo.color, e);
+      for (const key of PAINT_KEYS) m[key] = paintFrom[key] + (paintTo[key] - paintFrom[key]) * e;
+    }
+    if (k >= 1) paintTween = null;
+    return Boolean(paintTween);
   }
 
   // ---- mobile: the governor (quality.js) judges the render's own cost and dropped vsyncs, not the fps
@@ -194,7 +232,9 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
     const key = `${viewW}x${viewH}@${renderer.getPixelRatio()}`;
     if (key !== sizeKey) { sizeKey = key; renderer.setSize(viewW, viewH, false); }
     applyView();
+    resizeListeners.forEach((f) => f());
   }
+  const resizeListeners = new Set();
   // the projection for the measured size and the current framing. A change of framing alone (the story's
   // setFrameShift) comes here without measuring: reading the host's size right after the story moved the
   // canvas would force a synchronous layout in the scroll frame; the ResizeObserver brings the new size
@@ -240,6 +280,7 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
     canvas.setAttribute('aria-label', `Interactive 3D model${manifest.standIn ? ' (a stand-in concept car, not the Jesko Absolut)' : ''}. Drag, swipe sideways or use the arrow keys to turn it; plus and minus zoom.`);
 
     model = await loadModel(manifest, tier, onProgress, { anisotropy: anisotropy() });
+    paintId = defaultPaint(manifest)?.id ?? null;
     if (destroyed) { disposeObject(model.root); return; }
     scene.add(model.root);
 
@@ -330,6 +371,53 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
     setFrameShift(v, x = 0) { if (frameShift === v && frameShiftX === x) return; frameShift = v; frameShiftX = x; applyView(); },
     // the story's silhouette light, 0..1: a cool rim along the roofline and a soft glow on the floor (0 = off, as in the hero)
     setSilhouette(level) { if (lighting?.setSilhouette(level)) invalidate(); },
+    // ---- paint (Chapter V): the variants as the manifest lists them ({ id, label, color }), the one
+    // shown now, and a change to another (eased over PAINT_MS; instant under reduced motion or on request)
+    paints: () => paintVariants(manifest ?? {}).map((v) => ({ id: v.id, label: v.label, color: v.set.color, default: Boolean(v.default) })),
+    paint: () => paintId,
+    setPaint,
+    // the zoom and frame shift that keep the car inside rect (fractions of the canvas) at every heading,
+    // seen from the shot's height (fit.js). Cached: it is worked out again only when the canvas's size,
+    // the shot or the rect changes.
+    fitShot(shot, rect) {
+      if (!rig) return null;
+      const key = `${viewW}x${viewH} ${rig.fitDistance.toFixed(5)} ${JSON.stringify(shot)} ${rect.left.toFixed(4)} ${rect.top.toFixed(4)} ${rect.right.toFixed(4)} ${rect.bottom.toFixed(4)}`;
+      if (fitCache?.key === key) return fitCache.fit;
+      const cam = camera.clone();
+      cam.clearViewOffset();
+      cam.aspect = viewW / viewH;
+      cam.updateProjectionMatrix();
+      const fit = fitTurntable({ cam, place: rig.placeAt, points: model.points, shot, rect });
+      fitCache = { key, fit };
+      return fit;
+    },
+    // f() after the canvas has taken a new size. Returns a function that unsubscribes.
+    onResize: (f) => { resizeListeners.add(f); return () => resizeListeners.delete(f); },
+    // turns the camera by an angle (radians) about the car, from wherever it is (Chapter V's turntable,
+    // on top of any turn the visitor has made by hand)
+    turnBy(angle) { if (angle) rig?.turnBy(angle); },
+    // for tests: the box (CSS px, relative to the canvas) of what the last frame drew, alpha above
+    // threshold (0..1). Draws a frame and reads it back at once, so it costs a full read of the canvas.
+    drawnBounds(threshold = 0.5) {
+      if (!rig || contextLost) return null;
+      lighting.update(rig.azimuth());
+      renderer.render(scene, camera);
+      const gl = renderer.getContext();
+      const w = gl.drawingBufferWidth, h = gl.drawingBufferHeight;
+      const px = new Uint8Array(w * h * 4);
+      gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      const a = Math.round(threshold * 255);
+      let x0 = w, y0 = h, x1 = -1, y1 = -1;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        if (px[(y * w + x) * 4 + 3] > a) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      }
+      if (x1 < 0) return null;
+      const r = w / canvas.clientWidth;
+      // readPixels counts rows from the bottom
+      return { left: x0 / r, right: (x1 + 1) / r, top: (h - 1 - y1) / r, bottom: (h - y0) / r };
+    },
+    // for tests: how many shader programs three.js holds (a recompile adds one)
+    programs: () => renderer.info.programs?.length ?? 0,
     // f(true) when the car starts moving, f(false) when it comes to rest; called once at once with the
     // current state. Returns a function that unsubscribes.
     onActivity: (f) => { activityListeners.add(f); f(active); return () => activityListeners.delete(f); },
@@ -340,6 +428,7 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
     destroy() {
       setActive(false);
       activityListeners.clear();
+      resizeListeners.clear();
       contextListeners.clear();
       canvas.removeEventListener('webglcontextlost', onContextLost);
       canvas.removeEventListener('webglcontextrestored', onContextRestored);

@@ -7,6 +7,9 @@
 //                                                      Chapter III's stage at the end of its light reveal (the
 //                                                      start is the black page), per layout
 //                                                      (src/story/chapters/power-look.js)
+//   public/vehicle/posters/yours-{800,1600}.webp       Chapter V's car at the start of its turntable, in the
+//                                                      default paint, cut to the box the live car is fitted
+//                                                      into (src/story/chapters/yours-look.js)
 //   public/share.jpg                                   the link-preview card
 // The shots come from the manifest's "posters" block (model-agnostic: a new car brings its own), and the
 // car is drawn by the viewer's own model, light and camera code (scripts/posters/render.js), in a headless
@@ -22,6 +25,7 @@ import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { STAMP, manifestUrl, postersHash, stampedHash } from './posters/stamp.mjs';
 import { POSTERS as POWER, lightAt } from '../src/story/chapters/power-look.js';
+import { LIGHT as YOURS_LIGHT, STILL as YOURS_STILL, STILL_PAD } from '../src/story/chapters/yours-look.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const OUT = 'public/vehicle/posters';
@@ -148,6 +152,32 @@ try {
     }
   }
 
+  // Chapter V's still: fitted as the live chapter fits the car (every heading inside a box, fit.js), drawn
+  // at the turntable's start, then cut to that box plus STILL_PAD of it on each side for the ground shadow
+  {
+    const shot = manifest.camera?.shots?.yours;
+    if (!shot) throw new Error(`${url} has no camera.shots.yours`);
+    const [W, H] = YOURS_STILL.size;
+    // the box sits in the middle with room around it for the pad
+    const m = STILL_PAD + 0.04;
+    const { png: dataUrl, box } = await page.evaluate((o) => window.renderPoster(o), { manifestUrl: url, shot, width: W, height: H, scale: SCALE,
+      shadow: true, light: YOURS_LIGHT, fitRect: { left: m, top: m, right: 1 - m, bottom: 1 - m } });
+    const png = Buffer.from(dataUrl.split(',')[1], 'base64');
+    const bw = (box.right - box.left) * W * SCALE, bh = (box.bottom - box.top) * H * SCALE;
+    const crop = { left: Math.round(box.left * W * SCALE - bw * STILL_PAD), top: Math.round(box.top * H * SCALE - bh * STILL_PAD),
+      width: Math.round(bw * (1 + 2 * STILL_PAD)), height: Math.round(bh * (1 + 2 * STILL_PAD)) };
+    if (crop.left < 0 || crop.top < 0 || crop.left + crop.width > W * SCALE || crop.top + crop.height > H * SCALE) {
+      throw new Error('yours still: the padded box leaves the render; lower STILL_PAD');
+    }
+    const cut = await sharp(png).extract(crop).png().toBuffer();
+    for (const w of YOURS_STILL.widths) {
+      const file = `${OUT}/yours-${w}.webp`;
+      const info = await sharp(cut).resize({ width: w }).webp(WEBP).toFile(`${root}${file}`);
+      written[file] = info.size;
+    }
+    written.yoursShape = [crop.width, crop.height];
+  }
+
   // the link-preview card: the new hero poster on the site's ground, the title and the concept label
   {
     const card = await browser.newPage({ viewport: { width: 1200, height: 630 } });
@@ -159,6 +189,8 @@ try {
     written['public/share.jpg'] = info.size;
   }
   delete written.heroMaster;
+  console.log(`yours still: ${written.yoursShape.join(' x ')} (index.html's width and height on the still must keep this shape)`);
+  delete written.yoursShape;
 } finally {
   await browser.close();
   await server.close();

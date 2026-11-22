@@ -9,7 +9,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "model": "node scripts/build-model.mjs assets-src/models/car-concept.glb public/vehicle/models/car-concept && node scripts/render-posters.mjs",
-    "posters": "node scripts/render-posters.mjs"
+    "posters": "node scripts/render-posters.mjs",
+    "model:check": "node scripts/build-model.mjs --check public/vehicle/models/car-concept"
   },
   "devDependencies": {
     "@gltf-transform/cli": "^4.5.1",

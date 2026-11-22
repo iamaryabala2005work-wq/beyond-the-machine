@@ -10,8 +10,11 @@
 //             zooms within the same limits.
 //   keyboard  arrows turn and tilt, + and - zoom, Home resets.
 //
-// Two modes. 'orbit' is all of the above. 'story' hands the camera to the page's scroll: every input
-// above is ignored and only pose() places the camera (src/story/story.js). snapshot() and restore()
+// Three modes. 'orbit' is all of the above. 'story' hands the camera to the page's scroll: every input
+// above is ignored and only pose() places the camera (src/story/story.js). 'turn' is the story's hands-on
+// chapter (Chapter V): a drag, a sideways swipe or the arrow keys turn the car, and the story may turn it
+// too (turnBy); the camera's height and distance stay where the chapter's pose put them, so the chapter's
+// framing (the car clear of its words) holds at every angle. No zoom, no tilt. snapshot() and restore()
 // carry the orbit camera across a stretch of story untouched.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -66,7 +69,13 @@ export function createRig({ camera, canvas, stage, box, config, reducedMotion, o
   }
   // the visitor's limits (manifest camera.limits) hold in orbit mode; the story frames its own shots, so
   // in story mode they are opened (OrbitControls.update() would otherwise clamp every pose to them)
+  let lock = null; // turn mode: the polar angle and the zoom (a multiple of fitDistance) it holds
   function applyLimits() {
+    if (mode === 'turn' && lock) {
+      controls.minPolarAngle = controls.maxPolarAngle = lock.phi;
+      controls.minDistance = controls.maxDistance = fitDistance * lock.zoom;
+      return;
+    }
     const story = mode === 'story';
     controls.minPolarAngle = (story ? 1 : limits.polarMin) * DEG;
     controls.maxPolarAngle = (story ? 179 : limits.polarMax) * DEG;
@@ -77,7 +86,7 @@ export function createRig({ camera, canvas, stage, box, config, reducedMotion, o
     const ratio = camera.position.distanceTo(controls.target) / fitDistance;
     fitDistance = computeFit(aspect);
     applyLimits();
-    place(spherical(), fitDistance * (mode === 'story' ? ratio : THREE.MathUtils.clamp(ratio, limits.zoomMin, limits.zoomMax)));
+    place(spherical(), fitDistance * (mode !== 'orbit' ? ratio : THREE.MathUtils.clamp(ratio, limits.zoomMin, limits.zoomMax)));
   }
 
   const spherical = () => new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));
@@ -128,13 +137,13 @@ export function createRig({ camera, canvas, stage, box, config, reducedMotion, o
   }
   function setView(name) {
     const v = views[name];
-    if (!v || mode === 'story') return;
+    if (!v || mode !== 'orbit') return;
     spin = 0;
     tweenTo({ theta: v.azimuth * DEG, phi: v.polar * DEG, radius: fitDistance }, 1100); // every view returns to 1x zoom
     setActive(name);
   }
   function zoomBy(factor) {
-    if (mode === 'story') return;
+    if (mode !== 'orbit') return;
     const base = tween && tween.delta.r ? tween.from.r + tween.delta.r : camera.position.distanceTo(controls.target);
     tweenTo({ radius: base * factor }, 420);
   }
@@ -158,7 +167,7 @@ export function createRig({ camera, canvas, stage, box, config, reducedMotion, o
   const onTouchDown = (e) => {
     if (e.pointerType !== 'touch' || mode === 'story') return;
     fingers.add(e.pointerId);
-    controls.enableZoom = true; // pinch
+    controls.enableZoom = mode === 'orbit'; // pinch (turn mode: none)
     if (fingers.size > 1) { touch = null; spin = 0; return; } // two fingers: the pinch is OrbitControls'
     touch = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, locked: false };
     tween = null; spin = 0;
@@ -208,6 +217,7 @@ export function createRig({ camera, canvas, stage, box, config, reducedMotion, o
     else if (k === 'ArrowRight') nudge(15, 0);
     else if (k === 'ArrowUp') nudge(0, -5);
     else if (k === 'ArrowDown') nudge(0, 5);
+    else if (mode === 'turn' && (k === 'ArrowUp' || k === 'ArrowDown')) return; // no tilt: the page scrolls
     else if (k === '+' || k === '=') zoomBy(0.85);
     else if (k === '-' || k === '_') zoomBy(1 / 0.85);
     else if (k === 'Home') setView('home');
@@ -242,14 +252,34 @@ export function createRig({ camera, canvas, stage, box, config, reducedMotion, o
     onChange();
     return true;
   }
+  // puts another camera (a clone, for fitting: fit.js) where pose() would put this one for a shot,
+  // without moving this one or drawing anything
+  const tP = new THREE.Vector3();
+  function placeAt(cam, shot) {
+    targetAt(shot.target ?? homeTarget, tP);
+    cam.position.setFromSphericalCoords(fitDistance * (shot.zoom ?? 1), shot.polar * DEG, shot.azimuth * DEG).add(tP);
+    cam.lookAt(tP);
+    cam.updateMatrixWorld(true);
+  }
   function setMode(next) {
     if (next === mode) return;
     mode = next;
     tween = null; spin = 0; touch = null;
-    controls.enabled = mode === 'orbit';
+    controls.enabled = mode !== 'story';
+    controls.enableZoom = false;
+    // turn mode is inside the story's stage, which is hidden from assistive tech: no tab stop there
     canvas.tabIndex = mode === 'orbit' ? 0 : -1;
+    // turn mode holds the height and distance the last pose left
+    if (mode === 'turn') { const s = spherical(); lock = { phi: s.phi, zoom: s.radius / fitDistance }; } else lock = null;
     applyLimits();
     lastPose = '';
+  }
+  // turn mode: the story turns the car by an angle on top of where the visitor's hand left it. Applied to
+  // the camera as it stands, so it adds to a drag (and its damping) instead of replacing it.
+  function turnBy(angle) {
+    if (mode !== 'turn') return;
+    turn(angle);
+    onChange();
   }
   // the orbit camera as it stands (or where its running move will end), to put back after the story
   function snapshot() {
@@ -270,7 +300,8 @@ export function createRig({ camera, canvas, stage, box, config, reducedMotion, o
   place(new THREE.Spherical(1, views.home.polar * DEG, views.home.azimuth * DEG));
 
   return {
-    controls, resize, setView, zoomBy, pose, setMode, snapshot, restore,
+    controls, resize, setView, zoomBy, pose, setMode, snapshot, restore, turnBy, placeAt,
+    get fitDistance() { return fitDistance; },
     get mode() { return mode; },
     reset: () => setView('home'),
     get view() { return activeView; },
