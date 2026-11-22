@@ -3,6 +3,10 @@ dist
 .taste-skill/chrome-*
 shots
 
+# test and scratch output (screenshots, traces, one-off scripts' results)
+out/
+scratch/
+
 # Secrets and local files
 .env
 .env.*
