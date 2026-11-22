@@ -187,11 +187,20 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
   // canvas its width, even the same one, reallocates and clears it, and a resize also runs for a change
   // of framing alone (setFrameShift) and for the ResizeObserver's echo after the story moves the canvas.
   let sizeKey = '';
+  let viewW = 1, viewH = 1; // the size the last resize() measured
   function resize() {
-    const w = Math.max(1, host.clientWidth);
-    const h = Math.max(1, host.clientHeight);
-    const key = `${w}x${h}@${renderer.getPixelRatio()}`;
-    if (key !== sizeKey) { sizeKey = key; renderer.setSize(w, h, false); }
+    viewW = Math.max(1, host.clientWidth);
+    viewH = Math.max(1, host.clientHeight);
+    const key = `${viewW}x${viewH}@${renderer.getPixelRatio()}`;
+    if (key !== sizeKey) { sizeKey = key; renderer.setSize(viewW, viewH, false); }
+    applyView();
+  }
+  // the projection for the measured size and the current framing. A change of framing alone (the story's
+  // setFrameShift) comes here without measuring: reading the host's size right after the story moved the
+  // canvas would force a synchronous layout in the scroll frame; the ResizeObserver brings the new size
+  // after the browser's own layout, in the same frame.
+  function applyView() {
+    const w = viewW, h = viewH;
     camera.aspect = w / h;
     // shift the car in the frame (manifest camera.offsetY, a fraction of the height; negative lifts it).
     // From 1024px the view controls sit under the car, so it is lifted clear of them; below that they sit
@@ -202,7 +211,12 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
     rig?.resize(camera.aspect);
     invalidate();
   }
-  const ro = new ResizeObserver(resize);
+  // a size change is taken in the next frame, not inside the observer: when the story moves the canvas,
+  // the move's own style and layout and the drawing buffer's reallocation then fall in separate frames
+  let resizeRaf = 0;
+  const ro = new ResizeObserver(() => {
+    if (!resizeRaf) resizeRaf = requestAnimationFrame(() => { resizeRaf = 0; if (!destroyed) resize(); });
+  });
 
   // ---- visibility: no frames off screen or in a background tab. It watches the canvas's own slot, which
   // the story moves out of the hero and back (src/story/story.js), so frames follow the car, not the hero.
@@ -313,7 +327,7 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
     setKey(level) { if (lighting?.setKey(level)) invalidate(); },
     // shifts the car in the frame for the story: y a fraction of the height (negative lifts it, null = the
     // manifest's), x a fraction of the width (positive moves it right)
-    setFrameShift(v, x = 0) { if (frameShift === v && frameShiftX === x) return; frameShift = v; frameShiftX = x; resize(); },
+    setFrameShift(v, x = 0) { if (frameShift === v && frameShiftX === x) return; frameShift = v; frameShiftX = x; applyView(); },
     // the story's silhouette light, 0..1: a cool rim along the roofline and a soft glow on the floor (0 = off, as in the hero)
     setSilhouette(level) { if (lighting?.setSilhouette(level)) invalidate(); },
     // f(true) when the car starts moving, f(false) when it comes to rest; called once at once with the
@@ -332,6 +346,7 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
       destroyed = true;
       cancelAnimationFrame(raf);
       cancelAnimationFrame(probing);
+      cancelAnimationFrame(resizeRaf);
       gpuTimer?.dispose();
       ro.disconnect();
       io.disconnect();

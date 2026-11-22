@@ -1,6 +1,6 @@
 // Chapter III, Power: 1,600 hp on E85, counted by the scroll.
 //
-// p 0..0.25   the figure sharpens out of a blur (CSS, from --p)
+// entry       the mark, figure and unit come in as the chapter rises (CSS, from --e; blur on desktop only)
 // p 0.1..0.7  the figure counts 0 to 1,600 on an ease-out, so it slows into its last hundreds; scrolling
 //             back counts it down
 // p 0.7..1    the petrol line rises in (CSS)
@@ -43,8 +43,7 @@ export function createPower(el) {
   return {
     update(p, { reduced }) {
       show(reduced ? TARGET : Math.round(TARGET * easeOut(clamp01((p - 0.1) / 0.6))));
-      // reduced motion: the words fade in at their thresholds instead of following --p
-      el.toggleAttribute('data-in', p > 0);
+      // reduced motion: the petrol line fades in at its threshold (the rest at entry, story.js data-entered)
       el.toggleAttribute('data-late', p >= 0.7);
     },
     camera(viewer, p, { reduced }) {

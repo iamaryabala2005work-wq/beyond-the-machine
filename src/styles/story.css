@@ -32,8 +32,8 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
 .story__stage .vehicle-stage__gl { opacity: 0; }
 .story__stage[data-state="live"] .vehicle-stage__gl { opacity: 1; }
 @media (prefers-reduced-motion: no-preference) {
-  /* the car comes up out of the dark when the stage pins */
-  .story__stage .vehicle-stage__gl { transition: opacity 700ms var(--ease-settle); }
+  /* the car comes up out of the dark when it moves in from the hero */
+  .story__stage .vehicle-stage__gl { transition: opacity 400ms var(--ease-settle); }
 }
 
 /* ---- a chapter: a tall section whose frame stays pinned for (height - 100svh) of scroll */
@@ -59,19 +59,26 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
 .power__sep { color: var(--optic); }
 .power__petrol { margin: var(--s-6) 0 0; max-width: 30ch; font-size: clamp(17px, .5vw + 15px, 20px); line-height: 1.5; color: var(--p-ink); }
 
-/* reveals, scrubbed by --p: the figure (the display element here) sharpens over the first 25%; the
-   petrol line rises 8px in over 0.7..0.8 */
+/* reveals. The mark, the figure and the unit come in with the chapter as it rises into the screen (--e,
+   story.js), so Power starts the moment the hero leaves; they are whole by the time the chapter is 80% in.
+   Desktop: the figure (the display element) sharpens out of a blur. The mobile tier (as src/vehicle/gate.js
+   sorts it): no blur, which a phone draws as a grey smudge; the words fade and rise 12px instead.
+   The petrol line rises 8px in over p 0.7..0.8. */
 .power__figure, .power__unit, .chapter--power .chapter__mark {
-  --k: clamp(0, var(--p, 1) / .25, 1);
-  opacity: var(--k); filter: blur(calc((1 - var(--k)) * 10px)); }
-.power__unit, .chapter--power .chapter__mark { filter: none; }
+  --k: clamp(0, (var(--e, 1) - .35) / .45, 1);
+  opacity: var(--k); }
+.power__figure { filter: blur(calc((1 - var(--k)) * 10px)); }
+@media (max-width: 639px), (pointer: coarse) {
+  .power__figure { filter: none; }
+  .power__figure, .power__unit, .chapter--power .chapter__mark { translate: 0 calc((1 - var(--k)) * 12px); }
+}
 .power__petrol { --k: clamp(0, (var(--p, 1) - .7) / .1, 1); opacity: var(--k); translate: 0 calc((1 - var(--k)) * 8px); }
 
 /* reduced motion: no blur, no movement; the words fade in over 150ms at their thresholds */
 @media (prefers-reduced-motion: reduce) {
   .power__figure, .power__unit, .chapter--power .chapter__mark, .power__petrol { filter: none; translate: none; opacity: 0;
     transition: opacity 150ms linear; }
-  .chapter--power[data-in] :is(.power__figure, .power__unit, .chapter__mark) { opacity: 1; }
+  .chapter--power[data-entered] :is(.power__figure, .power__unit, .chapter__mark) { opacity: 1; }
   .chapter--power[data-late] .power__petrol { opacity: 1; }
   .story:not([data-story-ready]) :is(.power__figure, .power__unit, .chapter__mark, .power__petrol) { opacity: 1; }
 }
