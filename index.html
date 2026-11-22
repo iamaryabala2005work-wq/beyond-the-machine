@@ -46,7 +46,7 @@
 <link rel="modulepreload" href="/assets/moments/lib.js">
 <link rel="modulepreload" href="/assets/moments/cursor-spotlight/moment.js">
 <link rel="modulepreload" href="/assets/moments/counter-rolls/moment.js">
-<link rel="preload" as="image" href="/vehicle/jesko-absolut-1600.webp" imagesrcset="/vehicle/jesko-absolut-960.webp 960w, /vehicle/jesko-absolut-1600.webp 1600w, /vehicle/jesko-absolut-2400.webp 2400w" imagesizes="(max-width: 639px) 92vw, 1280px" fetchpriority="high">
+<link rel="preload" as="image" href="/vehicle/posters/hero-1600.webp" imagesrcset="/vehicle/posters/hero-960.webp 960w, /vehicle/posters/hero-1600.webp 1600w, /vehicle/posters/hero-2400.webp 2400w" imagesizes="(max-width: 639px) 92vw, 1280px" fetchpriority="high">
 <script type="module" src="/src/main.js"></script>
 </head>
 <body>
@@ -82,8 +82,8 @@
         </div>
         <div class="btn-row"><a class="btn btn--primary" href="#machine">Explore the machine<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"/><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"/></svg></a></div>
       </div>
-      <!-- VEHICLE STAGE (src/vehicle/stage.js). The poster (a photograph of a Jesko Absolut, cut out) shows
-           first; the 3D viewer then mounts into [data-vehicle-canvas] with the model named by
+      <!-- VEHICLE STAGE (src/vehicle/stage.js). The poster (a render of the 3D model itself, cut out:
+           scripts/render-posters.mjs) shows first; the 3D viewer then mounts into [data-vehicle-canvas] with the model named by
            data-vehicle-model. To swap in the final Jesko: build its GLB with scripts/build-model.mjs, write
            its manifest.json, and point data-vehicle-model at it. Nothing else here changes. -->
       <div class="hero__stage vehicle-stage" data-vehicle-stage data-vehicle-mode="poster"
@@ -96,11 +96,11 @@
         </div>
         <div class="vehicle-stage__canvas" data-vehicle-canvas></div>
         <img class="is-cutout vehicle-stage__poster" data-vehicle-poster
-             src="/vehicle/jesko-absolut-1600.webp"
-             srcset="/vehicle/jesko-absolut-960.webp 960w, /vehicle/jesko-absolut-1600.webp 1600w, /vehicle/jesko-absolut-2400.webp 2400w"
+             src="/vehicle/posters/hero-1600.webp"
+             srcset="/vehicle/posters/hero-960.webp 960w, /vehicle/posters/hero-1600.webp 1600w, /vehicle/posters/hero-2400.webp 2400w"
              sizes="(max-width: 639px) 92vw, 1280px" width="2400" height="1354"
-             alt="A Jesko Absolut in deep midnight blue, seen from the front three-quarter: low carbon splitter, slim headlights and a teardrop canopy"
-             fetchpriority="high" data-source="stand-in" data-subject="Koenigsegg Jesko Absolut">
+             alt="A render of the stand-in 3D concept car, not the Jesko Absolut, in midnight blue, seen from the front three-quarter"
+             fetchpriority="high" data-source="stand-in" data-subject="Stand-in 3D model, rendered">
         <span class="vehicle-stage__scan" aria-hidden="true"></span>
         <div class="vehicle-stage__status" data-vehicle-status role="status" hidden>
           <span>Loading 3D model</span><span class="vehicle-stage__pct" data-vehicle-progress>0%</span>
@@ -133,8 +133,8 @@
        The page always scrolls natively. Without 3D, the stage shows the poster and the chapters read the same. -->
   <div class="story" id="story" data-story>
     <div class="story__stage" data-story-stage data-state="poster" aria-hidden="true">
-      <img class="story__poster is-cutout" data-story-poster src="/vehicle/jesko-absolut-1600.webp"
-           srcset="/vehicle/jesko-absolut-960.webp 960w, /vehicle/jesko-absolut-1600.webp 1600w, /vehicle/jesko-absolut-2400.webp 2400w"
+      <img class="story__poster is-cutout" data-story-poster src="/vehicle/posters/hero-1600.webp"
+           srcset="/vehicle/posters/hero-960.webp 960w, /vehicle/posters/hero-1600.webp 1600w, /vehicle/posters/hero-2400.webp 2400w"
            sizes="(max-width: 639px) 92vw, 1280px" width="2400" height="1354" loading="lazy" alt="">
       <div class="story__canvas" data-story-canvas></div>
       <span class="hud-tag story__standin" data-story-standin hidden>Stand-in 3D model<span class="hud-tag__dot"></span></span>
@@ -170,11 +170,12 @@
           <p class="machine__sources">Sources: <a class="link" href="https://www.koenigsegg.com/model/jesko-absolut" rel="noopener">Jesko Absolut model page</a> and <a class="link" href="https://www.koenigsegg.com/technical-specifications-jesko-absolut" rel="noopener">technical specifications</a>, koenigsegg.com.</p>
         </div>
         <div class="frame frame--fill span-6 start-7 machine__detail">
-          <img class="frame__img" src="/vehicle/jesko-absolut-front-1400.webp"
-               srcset="/vehicle/jesko-absolut-front-800.webp 800w, /vehicle/jesko-absolut-front-1400.webp 1400w"
+          <img class="frame__img" src="/vehicle/posters/detail-1400.webp"
+               srcset="/vehicle/posters/detail-800.webp 800w, /vehicle/posters/detail-1400.webp 1400w"
                sizes="(max-width: 639px) 92vw, 628px" width="1400" height="934" loading="lazy"
-               alt="Close view of the Jesko Absolut’s front quarter: the headlight, the front wheel and the carbon splitter"
-               data-source="stand-in" data-subject="Koenigsegg Jesko Absolut, front quarter">
+               alt="Close render of the stand-in 3D concept car’s front quarter, not the Jesko Absolut: the headlight and the front wheel"
+               data-source="stand-in" data-subject="Stand-in 3D model, front quarter, rendered">
+          <span class="hud-tag machine__standin">Stand-in 3D model<span class="hud-tag__dot" aria-hidden="true"></span></span>
         </div>
       </div>
     </div>

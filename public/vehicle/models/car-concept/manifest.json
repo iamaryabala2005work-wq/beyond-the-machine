@@ -143,5 +143,44 @@
         }
       }
     }
+  },
+  "posters": {
+    "$comment": "Still images rendered from this model by scripts/render-posters.mjs (npm run posters; vite build re-renders when they are out of date). Shots as in camera.shots; hero is cut out to the car, detail is framed edge to edge.",
+    "hero": {
+      "shot": {
+        "azimuth": -38,
+        "polar": 74,
+        "zoom": 1.4
+      },
+      "size": [
+        2400,
+        1354
+      ],
+      "widths": [
+        960,
+        1600,
+        2400
+      ]
+    },
+    "detail": {
+      "shot": {
+        "azimuth": -40,
+        "polar": 80,
+        "zoom": 0.4,
+        "target": [
+          -0.3,
+          0.46,
+          0.32
+        ]
+      },
+      "size": [
+        1400,
+        934
+      ],
+      "widths": [
+        800,
+        1400
+      ]
+    }
   }
 }

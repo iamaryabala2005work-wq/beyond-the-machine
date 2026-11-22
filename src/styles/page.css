@@ -37,3 +37,7 @@
   .machine__figures { gap: var(--s-6) 12px; }
   .spec__label { font-size: 16px; }
 }
+
+/* the specifications' close view is a render of the stand-in model, and says so */
+.machine__detail { container-type: inline-size; }
+.machine__detail > .machine__standin { position: absolute; left: 0; top: calc(100cqw * 934 / 1400 + 12px); z-index: 1; pointer-events: none; }
