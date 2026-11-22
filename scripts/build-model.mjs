@@ -16,6 +16,13 @@
 //
 // It never joins, flattens, instances or palettes: those merge meshes and materials, and the viewer finds
 // wheels, paint and glass by their names through the manifest.
+//
+// Before anything is built, the manifest's paint variants (variants.paint, Chapter V) are checked: a
+// variant may set only color, metalness, roughness and clearcoatRoughness, the values the viewer blends
+// as uniforms. Anything else (a texture, transmission, iridescence, clearcoat to or from 0...) changes
+// which shader the paint needs, and a swatch would stall the page recompiling it. A bad variant stops
+// the build. To check a manifest without building:
+//   node scripts/build-model.mjs --check <public/vehicle/models/<id>>
 import { mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, unlinkSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -25,14 +32,61 @@ import { dedup, prune, textureCompress, meshopt, weldPrimitive, simplifyPrimitiv
 import { MeshoptEncoder, MeshoptDecoder, MeshoptSimplifier } from 'meshoptimizer';
 import sharp from 'sharp';
 
-const [src, outDir] = process.argv.slice(2);
-if (!src || !outDir) {
-  console.error('usage: node scripts/build-model.mjs <source.glb> <out-dir>');
+const checkOnly = process.argv[2] === '--check';
+const [src, outDir] = checkOnly ? [null, process.argv[3]] : process.argv.slice(2);
+if ((!src && !checkOnly) || !outDir) {
+  console.error('usage: node scripts/build-model.mjs <source.glb> <out-dir>\n       node scripts/build-model.mjs --check <out-dir>');
   process.exit(1);
 }
-mkdirSync(outDir, { recursive: true });
 const manifestPath = join(outDir, 'manifest.json');
 const manifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, 'utf8')) : {};
+
+// ---- the paint variants: only values the viewer can change without a new shader
+const VARIANT_KEYS = new Set(['color', 'metalness', 'roughness', 'clearcoatRoughness']);
+function checkPaintVariants(m) {
+  const list = m.variants?.paint;
+  if (list === undefined) return [];
+  const errors = [];
+  if (!Array.isArray(list) || !list.length) return ['variants.paint must be a non-empty list'];
+  const base = m.materials?.paint?.set ?? {};
+  if (!m.materials?.paint?.match) errors.push('variants.paint needs materials.paint.match: the material the variants apply to');
+  // the paint's clearcoat as the file and the finish leave it, which every variant shares
+  const coat = base.clearcoat;
+  if (coat !== undefined && !(coat > 0)) errors.push(`materials.paint.set.clearcoat is ${coat}: a clearcoated paint (clearcoat above 0) is what the variants are tuned for`);
+  const ids = new Set();
+  let defaults = 0;
+  for (const [i, v] of list.entries()) {
+    const at = `variants.paint[${i}]${v?.id ? ` (${v.id})` : ''}`;
+    if (!v?.id || !v?.label) errors.push(`${at}: needs an id and a label`);
+    if (ids.has(v?.id)) errors.push(`${at}: the id is used twice`);
+    ids.add(v?.id);
+    if (v?.default) defaults++;
+    for (const [k, value] of Object.entries(v?.set ?? {})) {
+      if (k === 'clearcoat') {
+        // named here on its own: the switch between none and some is the costly one
+        if ((value > 0) !== ((coat ?? 0) > 0)) errors.push(`${at}: sets clearcoat ${value}, ${value > 0 ? 'from' : 'to'} 0 (the paint's is ${coat ?? 0}); that recompiles the paint's shader`);
+        else errors.push(`${at}: sets clearcoat; a variant may set only ${[...VARIANT_KEYS].join(', ')}`);
+      } else if (!VARIANT_KEYS.has(k)) {
+        errors.push(`${at}: sets ${k}; a variant may set only ${[...VARIANT_KEYS].join(', ')} (anything else can recompile the paint's shader)`);
+      } else if (k === 'color' ? !/^#[0-9a-f]{6}$/i.test(value) : !(typeof value === 'number' && value >= 0 && value <= 1)) {
+        errors.push(`${at}: ${k} ${JSON.stringify(value)} is not ${k === 'color' ? 'a #rrggbb colour' : 'a number from 0 to 1'}`);
+      }
+    }
+    for (const k of VARIANT_KEYS) if (!(k in (v?.set ?? {}))) errors.push(`${at}: leaves out ${k}; every variant sets all four, so a change back is exact`);
+  }
+  if (defaults > 1) errors.push('variants.paint: more than one variant is marked default');
+  // the finish itself must not set what the variants own, or the two would disagree about the default
+  for (const k of VARIANT_KEYS) if (k in base) errors.push(`materials.paint.set.${k}: the default variant sets the paint's ${k}; leave it out of the finish`);
+  return errors;
+}
+const variantErrors = checkPaintVariants(manifest);
+if (variantErrors.length) {
+  console.error(`${manifestPath}: paint variants refused\n  - ${variantErrors.join('\n  - ')}`);
+  process.exit(1);
+}
+console.log(`${manifestPath}: ${manifest.variants?.paint?.length ?? 0} paint variants, none recompiles a shader`);
+if (checkOnly) process.exit(0);
+mkdirSync(outDir, { recursive: true });
 const build = manifest.build ?? {};
 // the URL the site serves outDir at (public/ is the site root)
 const publicDir = resolve('public');

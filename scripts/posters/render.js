@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { loadManifest, loadModel } from '/src/vehicle/viewer/model.js';
 import { createLighting } from '/src/vehicle/viewer/lighting.js';
 import { createRig } from '/src/vehicle/viewer/camera-rig.js';
+import { fitTurntable } from '/src/vehicle/viewer/fit.js';
 
 let ready = null;
 
@@ -30,13 +31,16 @@ async function setup(manifestUrl) {
   const config = { ...(manifest.camera ?? {}), limits: { polarMin: 1, polarMax: 179, zoomMin: 0.05, zoomMax: 20 } };
   const stage = document.createElement('div');
   const rig = createRig({ camera, canvas: renderer.domElement, stage, box: model.box, config, reducedMotion: true, onChange() {} });
-  return { manifest, renderer, scene, camera, rig, lighting, shadow };
+  return { manifest, renderer, scene, camera, rig, lighting, shadow, model };
 }
 
 // one poster: returns a PNG data URL of width x height (x scale), transparent where there is no car.
 // offset [x, y] shifts the car in the frame as the viewer's setFrameShift does (x of the width, positive
 // right; y of the height, positive down); light { key, silhouette } sets the story's light levels.
-window.renderPoster = async ({ manifestUrl, shot, width, height, scale = 1, shadow = true, offset = null, light = null }) => {
+// fitRect { left, top, right, bottom } (fractions of the frame): instead of the shot's zoom and the offset,
+// fit the car into that rect at every heading as the live viewer does (fit.js, Chapter V); the result is
+// then { png, box } with the fitted box in fractions of the frame.
+window.renderPoster = async ({ manifestUrl, shot, width, height, scale = 1, shadow = true, offset = null, light = null, fitRect = null }) => {
   ready ??= setup(manifestUrl);
   const s = await ready;
   s.renderer.setPixelRatio(scale);
@@ -48,11 +52,23 @@ window.renderPoster = async ({ manifestUrl, shot, width, height, scale = 1, shad
   s.lighting.setKey(light?.key ?? 1);
   s.lighting.setSilhouette(light?.silhouette ?? 0);
   s.rig.resize(s.camera.aspect);
+  let box = null;
+  if (fitRect) {
+    const cam = s.camera.clone();
+    cam.clearViewOffset();
+    cam.updateProjectionMatrix();
+    const fit = fitTurntable({ cam, place: s.rig.placeAt, points: s.model.points, shot, rect: fitRect });
+    s.camera.setViewOffset(width, height, -width * fit.x, -height * fit.y, width, height);
+    s.camera.updateProjectionMatrix();
+    shot = { ...shot, zoom: fit.zoom };
+    box = fit.box;
+  }
   s.rig.pose(shot, shot, 0);
   s.lighting.update(s.rig.azimuth());
   if (s.shadow) s.shadow.visible = shadow;
   s.renderer.render(s.scene, s.camera); // compiles the shaders
   s.renderer.render(s.scene, s.camera);
-  return s.renderer.domElement.toDataURL('image/png');
+  const png = s.renderer.domElement.toDataURL('image/png');
+  return fitRect ? { png, box } : png;
 };
 window.posterReady = true;

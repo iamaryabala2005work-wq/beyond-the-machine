@@ -26,6 +26,18 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
 .story__still { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 /* the light reveal on the still: up from the black page by --lp (story.js; 1 without script) */
 .story__still--lit { opacity: var(--lp, 1); }
+/* one still per chapter: the stage shows the one whose chapter has the car (data-shot, story.js). A change
+   of chapter brings the next still in over the last, which goes only once it is covered, so the stage never
+   shows an empty moment between them. */
+/* placed by yours.js; with its shadow margin it can be wider than the screen (the stage clips it), so the
+   page's img max-width must not squeeze it out of shape */
+.story__still--yours { inset: auto; left: 0; top: 0; width: 0; height: 0; max-width: none; max-height: none; opacity: 0; }
+.story__stage[data-shot="yours"] .story__still--power { opacity: 0; }
+.story__stage[data-shot="yours"] .story__still--yours { opacity: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .story__still--power, .story__still--yours { transition: opacity 300ms linear 400ms; }
+  .story__stage[data-shot="power"] .story__still--power, .story__stage[data-shot="yours"] .story__still--yours { transition: opacity 400ms var(--ease-settle); }
+}
 /* and on the live car (--lv, story.js): its unlit pixels are black, a shade off the page's own ground, so
    it is faded out entirely at the start of the reveal and fully there once a little light is up. The
    stand-in tag describes the car, so it comes with it. */
@@ -58,6 +70,12 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
 .chapter__source a { color: inherit; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in oklab, var(--p-muted) 50%, transparent); pointer-events: auto; }
 .chapter__source a:hover { color: var(--p-ink); }
 .chapter__source a:focus-visible { outline: 2px solid var(--optic); outline-offset: 2px; }
+
+/* ---- hands-on (Chapter V): the canvas takes the pointer, so a drag or a sideways swipe turns the car.
+   The page still scrolls over it: the wheel is never taken, and touch-action: pan-y gives vertical swipes
+   back to the browser (camera-rig.js). */
+.story__stage[data-hands-on] .vehicle-stage__gl { pointer-events: auto; cursor: grab; }
+.story__stage[data-hands-on] .vehicle-stage__gl:active { cursor: grabbing; }
 
 /* ---- III Power */
 .chapter--power { height: 380svh; }
@@ -107,4 +125,59 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
   .power__petrol { margin-top: var(--s-5); }
   .story__standin { bottom: auto; top: calc(var(--nav) + clamp(24px, 6svh, 72px)); }
   .chapter__source { font-size: 11px; }
+}
+
+/* ---- V Yours: the mark and the word at the top, the car in the free band under them (fitted there by
+   yours.js so that no heading of it reaches the words or the swatches), the finish and the swatches at
+   the foot. The frame lets the pointer through to the car; only the swatches take it. */
+.chapter--yours { height: 320svh; }
+.chapter--yours, .chapter--yours .chapter__frame { pointer-events: none; }
+.chapter--yours .chapter__frame { grid-template-rows: auto 1fr auto; grid-template-columns: minmax(0, 1fr); }
+/* min-width 0: the phone's one-row swatch strip scrolls inside the page instead of widening it */
+.yours__controls { grid-row: 3; min-width: 0; }
+.yours__title { margin: 0; font: var(--display-weight, 500) clamp(56px, min(11vw, 15svh), 168px)/.86 var(--font-display);
+  letter-spacing: var(--display-tracking-xl, -.045em); text-transform: uppercase; color: var(--p-ink); }
+.yours__readout { margin: 0 0 var(--s-4); display: flex; gap: var(--s-3); align-items: baseline;
+  font: 400 13px/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; }
+.yours__label { color: var(--p-muted); }
+.yours__name { color: var(--p-ink); }
+.yours__swatches { display: flex; flex-wrap: wrap; gap: var(--s-2); pointer-events: auto; }
+.yours__swatch { appearance: none; display: inline-flex; align-items: center; gap: 10px; flex: none; padding: 0 18px 0 14px; border-radius: 999px;
+  white-space: nowrap; cursor: pointer; }
+.yours__dot { width: 14px; height: 14px; border-radius: 50%; background: var(--dot); flex: none;
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--p-ink) 22%, transparent); transition: box-shadow var(--dur-fast); }
+.yours__swatch[aria-pressed="true"] { border-color: var(--optic); }
+.yours__swatch[aria-pressed="true"] .yours__dot { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--p-ink) 22%, transparent), 0 0 0 2px var(--p-bg), 0 0 0 3px var(--optic); }
+/* no 3D: labelled chips, not buttons (nothing to preview them on); the finish readout goes with the car */
+.yours__swatch:disabled { cursor: default; color: var(--p-ink); border-color: color-mix(in oklab, var(--p-ink) 24%, transparent); }
+.yours__swatch:disabled:hover { color: var(--p-ink); border-color: color-mix(in oklab, var(--p-ink) 24%, transparent); }
+.chapter--yours:not([data-preview]) .yours__readout { visibility: hidden; }
+.yours__note { margin: var(--s-3) 0 0; font: 400 12px/1.5 var(--font-mono); color: var(--p-muted); }
+.yours__note[hidden] { display: none; }
+
+/* reveals: the mark and the word as Power's (from --e; the word sharpens out of a blur on desktop only); the
+   finish and the swatches rise in over the chapter's first fifth (--p) */
+.yours__title, .chapter--yours .chapter__mark { --k: clamp(0, (var(--e, 1) - .35) / .45, 1); opacity: var(--k); }
+.yours__title { filter: blur(calc((1 - var(--k)) * 10px)); }
+.yours__controls { --k: clamp(0, var(--p, 1) / .2, 1); opacity: var(--k); translate: 0 calc((1 - var(--k)) * 8px); }
+@media (max-width: 639px), (pointer: coarse) {
+  .yours__title { filter: none; }
+  .yours__title, .chapter--yours .chapter__mark { translate: 0 calc((1 - var(--k)) * 12px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .yours__title, .chapter--yours .chapter__mark, .yours__controls { filter: none; translate: none; opacity: 0; transition: opacity 150ms linear; }
+  .chapter--yours[data-entered] :is(.yours__title, .chapter__mark, .yours__controls) { opacity: 1; }
+  .story:not([data-story-ready]) :is(.yours__title, .chapter--yours .chapter__mark, .yours__controls) { opacity: 1; }
+  .yours__dot { transition: none; }
+}
+
+/* from 640px the swatches keep clear of the stand-in tag in the stage's lower right corner */
+@media (min-width: 640px) { .yours__swatches { max-width: calc(100% - 220px); } }
+/* phones: one row under the car that scrolls sideways (no snap), edge to edge; 44px tap targets */
+@media (max-width: 639px) {
+  .chapter--yours { height: 360svh; }
+  .yours__swatches { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
+    margin-inline: calc(-1 * var(--gut)); padding-inline: var(--gut); }
+  .yours__swatches::-webkit-scrollbar { display: none; }
+  .yours__swatch { height: 44px; }
 }

@@ -136,8 +136,14 @@
       <div class="story__stills" data-story-poster>
         <picture>
           <source media="(min-width: 900px)" srcset="/vehicle/posters/power-split-lit.webp">
-          <img class="story__still story__still--lit" src="/vehicle/posters/power-stack-lit.webp" alt="" loading="lazy" decoding="async">
+          <img class="story__still story__still--lit story__still--power" src="/vehicle/posters/power-stack-lit.webp" alt="" loading="lazy" decoding="async">
         </picture>
+        <!-- Chapter V's car at the start of its turntable, in its default paint (never tinted to the visitor's
+             choice), cut to the box the live car is fitted into; src/story/chapters/yours.js places it in the
+             chapter's free band exactly as it fits the live car there. -->
+        <img class="story__still story__still--yours" data-still="yours"
+             src="/vehicle/posters/yours-1600.webp" srcset="/vehicle/posters/yours-800.webp 800w, /vehicle/posters/yours-1600.webp 1600w"
+             sizes="(max-width: 639px) 100vw, 80vw" width="2698" height="833" alt="" loading="lazy" decoding="async">
       </div>
       <div class="story__canvas" data-story-canvas></div>
       <span class="hud-tag story__standin" data-story-standin hidden>Stand-in 3D model<span class="hud-tag__dot"></span></span>
@@ -155,6 +161,28 @@
           <p class="power__petrol chapter__line">1,280 hp on petrol. Redline 8,500 rpm.</p>
         </div>
         <p class="wrap chapter__source">Source: <a href="https://www.koenigsegg.com/technical-specifications-jesko-absolut" rel="noopener">Jesko Absolut technical specifications</a>, koenigsegg.com</p>
+      </div>
+    </section>
+
+    <!-- V Yours (src/story/chapters/yours.js). The swatches come from the manifest's variants.paint; this list
+         is the no-script copy. Our own descriptive names: none of them is a factory colour. -->
+    <section class="chapter chapter--yours" id="yours" data-chapter="yours" aria-labelledby="yours-h">
+      <div class="chapter__frame">
+        <div class="wrap chapter__in yours__head" data-yours-head>
+          <p class="chapter__mark" aria-hidden="true"><span>V</span><span class="chapter__dash"></span>Yours</p>
+          <h2 class="yours__title" id="yours-h">Yours</h2>
+        </div>
+        <div class="wrap yours__controls" data-yours-controls>
+          <p class="yours__readout"><span class="yours__label">Finish</span> <span class="yours__name" data-finish aria-live="polite">Midnight</span></p>
+          <div class="yours__swatches" role="group" aria-label="Paint" data-swatches>
+            <button type="button" class="btn--outline yours__swatch" data-paint="midnight" disabled><span class="yours__dot" style="--dot:#18213a" aria-hidden="true"></span>Midnight</button>
+            <button type="button" class="btn--outline yours__swatch" data-paint="graphite" disabled><span class="yours__dot" style="--dot:#2a2d31" aria-hidden="true"></span>Graphite</button>
+            <button type="button" class="btn--outline yours__swatch" data-paint="ice" disabled><span class="yours__dot" style="--dot:#b9c6cf" aria-hidden="true"></span>Ice</button>
+            <button type="button" class="btn--outline yours__swatch" data-paint="bone" disabled><span class="yours__dot" style="--dot:#cfc6b4" aria-hidden="true"></span>Bone</button>
+            <button type="button" class="btn--outline yours__swatch" data-paint="ember" disabled><span class="yours__dot" style="--dot:#b3400f" aria-hidden="true"></span>Ember</button>
+          </div>
+          <p class="yours__note" data-yours-note>Preview needs the 3D model</p>
+        </div>
       </div>
     </section>
   </div>

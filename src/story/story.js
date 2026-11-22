@@ -27,12 +27,27 @@
 // follow the finger 1:1. The level the chapter reports (its level() hook) is written to the stage as
 // --lp, so the stills follow the same reveal.
 //
-// Reduced motion: nothing is scrubbed or smoothed. The camera cuts to a chapter's shot once its p passes
-// 0.15, the words fade in over 150 ms at their thresholds, and numbers show their final value.
+// Between chapters the car changes shot the same way, never in view: once the next chapter is half way
+// up the screen (its entry past 0.5), the canvas fades out over that chapter's still, takes the new pose
+// while hidden, and fades back in once it has drawn it ("reshoot"). The stills follow the same chapter
+// (data-shot on the stage), so the stage always shows a car, live or still, through the change.
+//
+// A chapter that is hands-on (its handsOn: Chapter V) gets the car in the rig's turn mode, and the canvas
+// takes pointer input there (data-hands-on on the stage): a drag or a sideways swipe turns the car, while
+// the page still scrolls under the wheel and vertical swipes.
+//
+// Chapter hooks: update(p) always; camera(viewer, p, { reduced, fresh }) and level(p) for the chapter the
+// car is in; and, when a chapter has them, measure() on resize, state(state, viewer) when the stage's
+// state changes, enter(viewer) when the car moves into the story, setReduced(r).
+//
+// Reduced motion: nothing is scrubbed or smoothed. The camera changes shot as above but at once (no
+// fades), the words fade in over 150 ms at their thresholds, and numbers show their final value.
 import { createPower } from './chapters/power.js';
+import { createYours } from './chapters/yours.js';
 
-const CHAPTERS = { power: createPower };
-const CUT_AT = 0.15;      // reduced motion: where a chapter's shot replaces the one before it
+const CHAPTERS = { power: createPower, yours: createYours };
+const SHOT_AT = 0.5;      // a chapter takes the car once it is this far into the screen (its entry)
+const FADE_MS = 420;      // the canvas's fade out before a reshoot (story.css: 400 ms)
 const LEAVE_SLACK = 24;   // px above the handoff point before the car goes back to the hero (no flicker at the edge)
 const SMOOTH = 0.16;      // s: the camera spring's smoothing time (critically damped; ~95% there in 3x this)
 const SETTLED = 1e-4;     // the spring stops when it is this close to the scroll, and this slow (per s)
@@ -49,7 +64,7 @@ export function initStory() {
   const chapters = [...story.querySelectorAll('[data-chapter]')]
     .map((el) => {
       const make = CHAPTERS[el.dataset.chapter];
-      return make ? { el, frame: el.querySelector('.chapter__frame') ?? el, top: 0, span: 1, p: -1, impl: make(el) } : null;
+      return make ? { el, name: el.dataset.chapter, frame: el.querySelector('.chapter__frame') ?? el, top: 0, span: 1, p: -1, e: -1, impl: make(el, { stage: stageEl }) } : null;
     })
     .filter(Boolean);
   if (!chapters.length) return;
@@ -64,7 +79,8 @@ export function initStory() {
   let snap = null;           // the hero's camera, kept while the story has the car
   let lost = false;          // the WebGL context is lost: the poster stands in
   let standIn = false;
-  let lastShot = null;       // reduced motion: the shot the camera last cut to
+  let shot = null;           // the chapter whose pose the live car holds
+  let hideUntil = 0;         // a reshoot: the canvas is fading out until then
   let ticking = 0;
   let needMeasure = true;
   // the camera spring: where the camera is (in p), its speed, and the frame time it last stepped at
@@ -72,10 +88,14 @@ export function initStory() {
   let shown = false;         // the live canvas has drawn the chapter's pose and is shown
   let lastLp = '', lastLv = '';
 
+  let lastState = '';
   function setState() {
     const state = !viewer || lost ? 'poster' : !inStory ? 'waiting' : shown ? 'live' : 'entering';
     if (stageEl.dataset.state !== state) stageEl.dataset.state = state;
     if (standinTag) standinTag.hidden = !(state === 'live' && standIn);
+    const handsOn = state === 'live' && Boolean(shot?.impl.handsOn);
+    if (stageEl.hasAttribute('data-hands-on') !== handsOn) stageEl.toggleAttribute('data-hands-on', handsOn);
+    if (state !== lastState) { lastState = state; for (const c of chapters) c.impl.state?.(state, viewer); }
   }
 
   function adopt(handle) {
@@ -87,6 +107,7 @@ export function initStory() {
     host.before(homeMarker);
     handle.ready.then((info) => { standIn = Boolean(info?.manifest?.standIn); setState(); });
     handle.onContextChange?.((isLost) => { lost = isLost; setState(); });
+    handle.onResize?.(() => schedule()); // a hands-on chapter fits the car to the canvas's new size
     setState();
     schedule(true);
   }
@@ -99,30 +120,47 @@ export function initStory() {
     viewer.setMode('story');
     slot.append(host);
     hero.dataset.vehicleStory = '';
-    lastShot = null;
+    shot = null;       // the tick poses the chapter on screen while the canvas is hidden
+    hideUntil = 0;
     camP = -1; // the camera starts where the scroll is, not eased in from elsewhere
     shown = false;
     lastLv = '';
+    for (const c of chapters) c.impl.enter?.(viewer);
     setState();
-    // the canvas is shown once it has drawn the chapter's pose at its new size: the pose is set in this
-    // frame (tick), the new size is taken in the next (viewer.js), the frame after draws both
+  }
+  // the canvas is shown once it has drawn the chapter's pose at its new size: the pose is set in this
+  // frame (tick), a new size is taken in the next (viewer.js), the frame after draws both
+  let revealing = 0;
+  function reveal() {
+    const token = ++revealing;
     let frames = 0;
     const wait = () => {
-      if (!inStory) return;
+      if (!inStory || token !== revealing) return;
       if (++frames < 4) { requestAnimationFrame(wait); return; }
       shown = true;
       setState();
     };
     requestAnimationFrame(wait);
   }
+  // the canvas, hidden, takes chapter c's pose
+  function takeShot(c, now) {
+    viewer.setMode('story'); // a hands-on chapter's turn mode would hold the next pose to its height
+    shot = c;
+    camChapter = c; camP = c.p; camV = 0; camAt = now;
+    c.impl.camera(viewer, reduced ? 1 : c.p, { reduced, fresh: true });
+    setLv(c.impl.level?.(c.p, { reduced }) ?? 1);
+  }
   function leave() {
     inStory = false;
     shown = false;
+    shot = null;
+    revealing++;
     lastLp = ''; // the stills are back: bring their light level up to date
     homeMarker.after(host);
     viewer.setFrameShift(null);
     viewer.setKey(1);
     viewer.setSilhouette(0);
+    viewer.setMode('story'); // out of a hands-on chapter's turn mode, so the hero's camera is put back whole
     viewer.setMode('orbit');
     viewer.restore(snap);
     snap = null;
@@ -148,6 +186,7 @@ export function initStory() {
       c.span = Math.max(1, c.el.offsetHeight - c.frame.offsetHeight); // the scroll distance the frame stays pinned
       c.p = -1; // force a fresh update
       c.e = -1;
+      c.impl.measure?.();
     }
   }
 
@@ -180,44 +219,58 @@ export function initStory() {
       else if (inStory && y < handoff - LEAVE_SLACK) leave();
     }
 
-    // the chapter on screen drives the camera: the last one whose top has been reached (the first before that)
-    let active = chapters[0];
+    // every chapter follows the scroll; the car belongs to the last chapter half way into the screen
+    let want = chapters[0];
     for (const c of chapters) {
       const p = Math.min(1, Math.max(0, (y - c.top) / c.span));
-      if (y >= c.top) active = c;
       // entry: 0 while the chapter's top is a screen below, 1 once it reaches the top of the screen
       const e = Math.min(1, Math.max(0, (y - (c.top - vh)) / vh));
+      if (e >= SHOT_AT) want = c;
       if (e !== c.e) { c.e = e; c.el.style.setProperty('--e', e.toFixed(4)); c.el.toggleAttribute('data-entered', e >= 0.5); }
       if (p === c.p) continue;
       c.p = p;
       c.el.style.setProperty('--p', p.toFixed(4));
       c.impl.update(p, { reduced });
     }
+    if (stageEl.dataset.shot !== want.name) stageEl.dataset.shot = want.name;
 
     if (inStory && !lost) {
-      const i = chapters.indexOf(active);
-      if (!reduced && (active !== camChapter || camP < 0)) { camChapter = active; camP = active.p; camV = 0; camAt = now; }
-      const p = active.p;
-      if (reduced) {
-        // a cut, not a move: the shot before this chapter until it is well under way
-        const c = p >= CUT_AT || i === 0 ? active : chapters[i - 1];
-        if (c !== lastShot) { lastShot = c; c.impl.camera(viewer, 1, { reduced, cut: true }); }
-        setLv(1);
-      } else {
-        const moving = spring(p, now);
-        active.impl.camera(viewer, camP, { reduced });
-        setLv(active.impl.level?.(camP, { reduced }) ?? 1);
-        // keep stepping until the camera has caught up with the scroll; then nothing more is drawn
-        if (moving) schedule();
+      if (want !== shot) {
+        if (shown) {
+          // a reshoot: fade the canvas out over the next chapter's still (at once under reduced motion)
+          shown = false;
+          lastLp = '';
+          setState();
+          hideUntil = now + (reduced ? 0 : FADE_MS);
+          setTimeout(() => schedule(), reduced ? 0 : FADE_MS + 16);
+        } else if (now >= hideUntil) {
+          takeShot(want, now);
+          reveal();
+        }
+      }
+      if (shot) {
+        if (reduced) {
+          // a cut, not a move: the shot is set once (takeShot); a chapter whose camera follows p in
+          // steps (none yet) would be called here
+          setLv(shot.impl.level?.(1, { reduced }) ?? 1);
+        } else {
+          if (camChapter !== shot || camP < 0) { camChapter = shot; camP = shot.p; camV = 0; camAt = now; }
+          const moving = spring(shot.p, now);
+          shot.impl.camera(viewer, camP, { reduced });
+          setLv(shot.impl.level?.(camP, { reduced }) ?? 1);
+          // keep stepping until the camera has caught up with the scroll; then nothing more is drawn
+          if (moving) schedule();
+        }
       }
     } else {
       camP = -1;
     }
+    setState();
 
     // the stills' light level, straight from the scroll; not written while the live car hides them (a
     // style change every frame for images nobody sees)
     if (!(inStory && shown && !lost)) {
-      const lp = (active.impl.level?.(Math.max(0, active.p), { reduced }) ?? 1).toFixed(3);
+      const lp = (want.impl.level?.(Math.max(0, want.p), { reduced }) ?? 1).toFixed(3);
       if (lp !== lastLp) { lastLp = lp; stageEl.style.setProperty('--lp', lp); }
     }
   }
@@ -234,8 +287,8 @@ export function initStory() {
   reducedQuery.addEventListener('change', () => {
     reduced = reducedQuery.matches;
     story.toggleAttribute('data-reduced', reduced);
-    lastShot = null;
-    for (const c of chapters) c.p = -1;
+    for (const c of chapters) { c.p = -1; c.impl.setReduced?.(reduced); }
+    if (inStory && shot) takeShot(shot, performance.now());
     schedule();
   });
   story.toggleAttribute('data-reduced', reduced);
