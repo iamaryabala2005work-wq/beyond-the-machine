@@ -19,12 +19,19 @@
 
 .footer__note { margin: 0; color: var(--p-muted); max-width: 52ch; line-height: 1.6; }
 
-/* the nav-split grid starts at 1024; below it the logo takes the left line and the tag steps out */
-@media (max-width: 1023px) { .nav--split .nav__links { display: none; } }
+/* "Unofficial concept" stays in the bar at every width. The nav-split grid starts at 1024; below it the
+   bar is a row: the logo first, the tag after it on the right, then the nav's button (tablet). The kit
+   hides the links below 1024 (they move to a sheet), so the tag is brought back here. */
+@media (max-width: 1023px) {
+  .nav--split .nav__logo { order: 1; }
+  .nav.nav--split .nav__links { display: flex; order: 2; flex: none; margin-left: auto; align-self: center; }
+  .nav--split .nav__actions { order: 3; }
+  .nav.nav--split:not(.is-open) .nav__actions { margin-left: 0; }
+}
 
-/* the narrowest phones (320) have no room for the logo and the nav's button: the main action stays in the
-   hero and the close */
-@media (max-width: 399px) { .nav.nav--split:not(.is-open) .nav__actions { display: none; } }
+/* phones have no room for the logo, the tag and the nav's button: the main action stays in the hero and
+   the close */
+@media (max-width: 639px) { .nav.nav--split:not(.is-open) .nav__actions { display: none; } }
 
 @media (max-width: 639px) {
   .machine__figures { gap: var(--s-6) 12px; }

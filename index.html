@@ -127,6 +127,35 @@
     </div></div>
   </section>
 
+  <!-- THE STORY (src/story/story.js, src/styles/story.css). One pinned stage behind every chapter: when the
+       stage pins, the hero's live 3D canvas moves into [data-story-canvas] (one canvas, one WebGL context) and
+       the camera follows the scroll position; scrolling back above the story returns it to the hero as it was.
+       The page always scrolls natively. Without 3D, the stage shows the poster and the chapters read the same. -->
+  <div class="story" id="story" data-story>
+    <div class="story__stage" data-story-stage data-state="poster" aria-hidden="true">
+      <img class="story__poster is-cutout" data-story-poster src="/vehicle/jesko-absolut-1600.webp"
+           srcset="/vehicle/jesko-absolut-960.webp 960w, /vehicle/jesko-absolut-1600.webp 1600w, /vehicle/jesko-absolut-2400.webp 2400w"
+           sizes="(max-width: 639px) 92vw, 1280px" width="2400" height="1354" loading="lazy" alt="">
+      <div class="story__canvas" data-story-canvas></div>
+      <span class="hud-tag story__standin" data-story-standin hidden>Stand-in 3D model<span class="hud-tag__dot"></span></span>
+    </div>
+
+    <section class="chapter chapter--power" id="power" data-chapter="power" aria-labelledby="power-h">
+      <div class="chapter__frame">
+        <div class="wrap chapter__in">
+          <p class="chapter__mark" id="power-h"><span aria-hidden="true">III</span><span class="chapter__dash" aria-hidden="true"></span>Power</p>
+          <p class="power__figure">
+            <span class="power__count" data-count aria-hidden="true">1,600</span>
+            <span class="sr-only">1,600 horsepower on E85</span>
+          </p>
+          <p class="power__unit" aria-hidden="true">HP <span class="power__sep">·</span> E85</p>
+          <p class="power__petrol chapter__line">1,280 hp on petrol. Redline 8,500 rpm.</p>
+        </div>
+        <p class="wrap chapter__source">Source: <a href="https://www.koenigsegg.com/technical-specifications-jesko-absolut" rel="noopener">Jesko Absolut technical specifications</a>, koenigsegg.com</p>
+      </div>
+    </section>
+  </div>
+
   <section class="section ground-surface" id="machine" style="--hm: 2" aria-labelledby="machine-h">
     <div class="wrap">
       <div class="section-head">

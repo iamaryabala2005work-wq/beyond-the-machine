@@ -73,6 +73,17 @@ export function createLighting({ scene, renderer, box, accent, reducedMotion }) 
       place(azimuth);
       return Math.abs(goal.x - now.x) + Math.abs(goal.y - now.y) > 0.002;
     },
+    // how much of the studio light falls on the car, 0..1 (1 = as in the hero). The story dims it for
+    // its darker chapters; the cyan rim stays as it is, so a dimmed car still shows its outline.
+    // Returns true when it changed, so the caller draws a frame.
+    setKey(level) {
+      const k = Math.min(1, Math.max(0, level));
+      const keyI = 2.4 * k, envI = 0.55 * (0.25 + 0.75 * k);
+      if (Math.abs(key.intensity - keyI) < 1e-3 && Math.abs(scene.environmentIntensity - envI) < 1e-3) return false;
+      key.intensity = keyI;
+      scene.environmentIntensity = envI;
+      return true;
+    },
     // after a context restore. The old reflection lived only in the lost context, so it is dropped, not
     // disposed (disposing would hand stale GL objects to the new context).
     rebuild: buildEnvironment,

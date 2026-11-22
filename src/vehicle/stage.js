@@ -69,6 +69,8 @@ async function boot(stage) {
     stage.vehicle = handle;
     const syncLight = linkBackgroundLight(stage, handle);
     followContext(stage, handle, ui, syncLight);
+    // the story (src/story/story.js) borrows the live car from here
+    stage.dispatchEvent(new CustomEvent('vehicle:live', { detail: handle }));
   }
   else ui.failed();
 }
@@ -131,6 +133,9 @@ function followContext(stage, handle, ui, syncLight) {
 //   it never runs. Both stay as they are.
 // - A visitor who pressed the light's own pause button keeps it paused.
 // - While the poster is back (the car's WebGL context was lost), the light moves as it does on the poster.
+// - While the story has the car (data-vehicle-story on the stage, src/story/story.js), the light holds
+//   still: the car moves with every scroll frame there, and the light, out of sight in the hero, would
+//   otherwise draw a second WebGL canvas alongside it.
 // The light's own WebGL canvas recovers from a lost context by itself (fx.js makes a fresh canvas) and
 // keeps its paused or running state through that. Returns a function that applies the state again.
 const LIGHT_REST_MS = 1200;
@@ -144,7 +149,8 @@ function linkBackgroundLight(stage, handle) {
     const ctl = light.__fx;
     if (!ctl) return;
     const posterShown = stage.dataset.vehicleMode !== 'live';
-    if ((moving || posterShown) && !pausedByVisitor()) ctl.resume();
+    const inStory = 'vehicleStory' in stage.dataset;
+    if (!inStory && (moving || posterShown) && !pausedByVisitor()) ctl.resume();
     else ctl.pause();
   };
   handle.onActivity((on) => {
@@ -153,6 +159,7 @@ function linkBackgroundLight(stage, handle) {
     else timer = setTimeout(() => { moving = false; apply(); }, LIGHT_REST_MS);
   });
   new MutationObserver(apply).observe(light, { attributes: true, attributeFilter: ['data-fx-mounted'] });
+  new MutationObserver(apply).observe(stage, { attributes: true, attributeFilter: ['data-vehicle-story'] });
   return apply;
 }
 

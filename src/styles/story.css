@@ -1,0 +1,87 @@
+/* The story (src/story/story.js): chapters over one pinned stage. Native scroll only: sticky frames, no
+   snap, no smooth scrolling. Each chapter's --p (0..1 while its frame is pinned) drives its reveals; without
+   script --p is unset and every reveal falls back to shown.
+
+   Type: the display face for words, Geist Mono for chapter marks, figures, units and sources. Cyan is a
+   small accent only (focus and hover); everything else is ink or muted. */
+
+/* ---- the outlined pill: a thin ink line, no fill, mono; cyan only on hover and focus */
+.btn--outline { height: 44px; padding: 0 var(--s-5); border: 1px solid color-mix(in oklab, var(--p-ink) 40%, transparent);
+  background: none; color: var(--p-ink); font: 500 13px/1 var(--font-mono); letter-spacing: .04em; text-transform: uppercase;
+  transition: border-color var(--dur-fast), color var(--dur-fast); }
+.btn--outline:hover { border-color: var(--optic); color: var(--optic); background: none; }
+.btn--outline:focus-visible { outline: 2px solid var(--optic); outline-offset: 3px; }
+html[data-buttons="pill"] .btn--outline::after { content: none; }
+
+/* ---- the story and its pinned stage */
+.story { position: relative; background: var(--p-bg); }
+.story__stage { position: sticky; top: 0; height: 100svh; z-index: 0; overflow: clip; pointer-events: none; }
+/* the chapters run over the stage: the first starts where the stage does */
+.story__stage + .chapter { margin-top: -100svh; }
+.story__canvas { position: absolute; inset: 0; }
+/* the hero's canvas slot, moved in here by story.js, fills the stage */
+.story__canvas > .vehicle-stage__canvas { position: absolute; inset: 0; }
+.story__canvas .vehicle-stage__gl { border-radius: 0; cursor: default; }
+.story__poster { position: absolute; right: var(--gut); bottom: 9svh; width: min(56vw, 820px); height: auto;
+  opacity: 0; visibility: hidden; filter: brightness(.55) drop-shadow(0 40px 40px rgb(0 0 0 / .55)); }
+.story__standin { position: absolute; right: var(--gut); bottom: var(--s-5); }
+
+/* states (story.js): poster = no live 3D (none on this device, still loading, failed, or the context lost);
+   waiting = the 3D car is still in the hero; live = the car is here */
+.story__stage[data-state="poster"] .story__poster { opacity: 1; visibility: visible; }
+.story__stage .vehicle-stage__gl { opacity: 0; }
+.story__stage[data-state="live"] .vehicle-stage__gl { opacity: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  /* the car comes up out of the dark when the stage pins */
+  .story__stage .vehicle-stage__gl { transition: opacity 700ms var(--ease-settle); }
+}
+
+/* ---- a chapter: a tall section whose frame stays pinned for (height - 100svh) of scroll */
+.chapter { position: relative; z-index: 1; }
+.chapter__frame { position: sticky; top: 0; height: 100svh; display: grid; grid-template-rows: 1fr auto;
+  padding: calc(var(--nav) + clamp(24px, 6svh, 72px)) 0 var(--s-5); }
+.chapter__in { align-self: start; }
+.chapter__mark { margin: 0 0 var(--s-5); display: flex; align-items: center; gap: var(--s-3);
+  font: 400 13px/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--p-muted); }
+.chapter__dash { width: 32px; height: 1px; background: currentColor; opacity: .6; }
+.chapter__source { margin-block: 0; font: 400 12px/1.5 var(--font-mono); color: var(--p-muted); }
+.chapter__source a { color: inherit; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in oklab, var(--p-muted) 50%, transparent); pointer-events: auto; }
+.chapter__source a:hover { color: var(--p-ink); }
+.chapter__source a:focus-visible { outline: 2px solid var(--optic); outline-offset: 2px; }
+
+/* ---- III Power */
+.chapter--power { height: 200svh; }
+.power__figure { margin: 0; font: 400 clamp(96px, 13vw, 208px)/.9 var(--font-mono); letter-spacing: -.04em; color: var(--p-ink);
+  font-variant-numeric: tabular-nums; }
+/* a fixed box, right-aligned: the digits never shift as the count grows */
+.power__count { display: inline-block; width: 5ch; text-align: right; }
+.power__unit { margin: var(--s-4) 0 0; font: 400 15px/1 var(--font-mono); letter-spacing: .14em; color: var(--p-muted); }
+.power__sep { color: var(--optic); }
+.power__petrol { margin: var(--s-6) 0 0; max-width: 38ch; font-size: clamp(17px, .5vw + 15px, 20px); line-height: 1.5; color: var(--p-ink); }
+
+/* reveals, scrubbed by --p: the figure (the display element here) sharpens over the first 25%; the
+   petrol line rises 8px in over 0.7..0.8 */
+.power__figure, .power__unit, .chapter--power .chapter__mark {
+  --k: clamp(0, var(--p, 1) / .25, 1);
+  opacity: var(--k); filter: blur(calc((1 - var(--k)) * 10px)); }
+.power__unit, .chapter--power .chapter__mark { filter: none; }
+.power__petrol { --k: clamp(0, (var(--p, 1) - .7) / .1, 1); opacity: var(--k); translate: 0 calc((1 - var(--k)) * 8px); }
+
+/* reduced motion: no blur, no movement; the words fade in over 150ms at their thresholds */
+@media (prefers-reduced-motion: reduce) {
+  .power__figure, .power__unit, .chapter--power .chapter__mark, .power__petrol { filter: none; translate: none; opacity: 0;
+    transition: opacity 150ms linear; }
+  .chapter--power[data-in] :is(.power__figure, .power__unit, .chapter__mark) { opacity: 1; }
+  .chapter--power[data-late] .power__petrol { opacity: 1; }
+  .story:not([data-story-ready]) :is(.power__figure, .power__unit, .chapter__mark, .power__petrol) { opacity: 1; }
+}
+
+@media (max-width: 639px) {
+  .story__poster { right: auto; left: 4vw; width: 92vw; bottom: 14svh; }
+  .chapter--power { height: 160svh; }
+  .power__figure { font-size: clamp(72px, 22vw, 200px); }
+  .power__unit { font-size: 13px; }
+  .power__petrol { margin-top: var(--s-5); }
+  .story__standin { bottom: auto; top: calc(var(--nav) + clamp(24px, 6svh, 72px)); }
+  .chapter__source { font-size: 11px; }
+}

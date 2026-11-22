@@ -4,6 +4,9 @@ import './styles/tokens.css';
 import './styles/hud.css';
 import './styles/vehicle-stage.css';
 import './styles/page.css';
+import './styles/story.css';
 import { initVehicleStages } from './vehicle/stage.js';
+import { initStory } from './story/story.js';
 
 initVehicleStages();
+initStory();

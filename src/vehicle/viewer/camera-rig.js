@@ -9,6 +9,10 @@
 //             The camera's height on touch comes from the Front / Side / Rear views. A two-finger pinch
 //             zooms within the same limits.
 //   keyboard  arrows turn and tilt, + and - zoom, Home resets.
+//
+// Two modes. 'orbit' is all of the above. 'story' hands the camera to the page's scroll: every input
+// above is ignored and only pose() places the camera (src/story/story.js). snapshot() and restore()
+// carry the orbit camera across a stretch of story untouched.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
@@ -18,7 +22,12 @@ const NO_GESTURE = -1; // an OrbitControls touch slot with no action: the rig's 
 
 export function createRig({ camera, canvas, stage, box, config, reducedMotion, onChange }) {
   const size = box.getSize(new THREE.Vector3());
-  const target = new THREE.Vector3(0, size.y * (config.targetHeight ?? 0.4), 0);
+  const homeTarget = [0, config.targetHeight ?? 0.4, 0];
+  // a look-at point given as fractions of the car's box: x and z from its centre (-0.5..0.5), y from the
+  // ground (0..1). The model is centred on the origin with its wheels on y = 0 (model.js).
+  const targetAt = ([fx, fy, fz], out = new THREE.Vector3()) => out.set(fx * size.x, fy * size.y, fz * size.z);
+  const target = targetAt(homeTarget);
+  let mode = 'orbit';
   const limits = { polarMin: 58, polarMax: 86, zoomMin: 0.8, zoomMax: 1.6, ...config.limits };
   const views = { home: config.home, ...config.views };
 
@@ -111,12 +120,13 @@ export function createRig({ camera, canvas, stage, box, config, reducedMotion, o
   }
   function setView(name) {
     const v = views[name];
-    if (!v) return;
+    if (!v || mode === 'story') return;
     spin = 0;
     tweenTo({ theta: v.azimuth * DEG, phi: v.polar * DEG, radius: fitDistance }, 1100); // every view returns to 1x zoom
     setActive(name);
   }
   function zoomBy(factor) {
+    if (mode === 'story') return;
     const base = tween && tween.delta.r ? tween.from.r + tween.delta.r : camera.position.distanceTo(controls.target);
     tweenTo({ radius: base * factor }, 420);
   }
@@ -138,7 +148,7 @@ export function createRig({ camera, canvas, stage, box, config, reducedMotion, o
     place(s);
   }
   const onTouchDown = (e) => {
-    if (e.pointerType !== 'touch') return;
+    if (e.pointerType !== 'touch' || mode === 'story') return;
     fingers.add(e.pointerId);
     controls.enableZoom = true; // pinch
     if (fingers.size > 1) { touch = null; spin = 0; return; } // two fingers: the pinch is OrbitControls'
@@ -184,6 +194,7 @@ export function createRig({ camera, canvas, stage, box, config, reducedMotion, o
     onChange();
   }
   const onKey = (e) => {
+    if (mode === 'story') return;
     const k = e.key;
     if (k === 'ArrowLeft') nudge(-15, 0);
     else if (k === 'ArrowRight') nudge(15, 0);
@@ -197,11 +208,61 @@ export function createRig({ camera, canvas, stage, box, config, reducedMotion, o
   };
   canvas.addEventListener('keydown', onKey);
 
+  // ---- story: the camera placed from the page's scroll position, never from a clock
+  // A shot is { azimuth, polar (degrees), zoom (a multiple of the fit distance), target? ([fx, fy, fz]) }.
+  // pose(a, b, t) places the camera t (0..1, already eased by the caller) of the way from shot a to shot b:
+  // the heading the shortest way round, the look-at point and the distance in a straight line. It is
+  // drawn only when the pose actually changes, so a scroll that holds still draws nothing.
+  const tA = new THREE.Vector3(), tB = new THREE.Vector3();
+  let lastPose = '';
+  function pose(a, b = a, t = 0) {
+    const k = THREE.MathUtils.clamp(t, 0, 1);
+    const az0 = a.azimuth * DEG;
+    const dAz = ((b.azimuth * DEG - az0 + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+    const theta = az0 + dAz * k;
+    const phi = THREE.MathUtils.lerp(a.polar, b.polar, k) * DEG;
+    const zoom = THREE.MathUtils.lerp(a.zoom ?? 1, b.zoom ?? 1, k);
+    targetAt(a.target ?? homeTarget, tA);
+    targetAt(b.target ?? homeTarget, tB);
+    tA.lerp(tB, k);
+    const key = `${theta.toFixed(4)} ${phi.toFixed(4)} ${zoom.toFixed(4)} ${tA.x.toFixed(4)} ${tA.y.toFixed(4)} ${tA.z.toFixed(4)} ${fitDistance.toFixed(4)}`;
+    if (key === lastPose) return false;
+    lastPose = key;
+    tween = null; spin = 0;
+    controls.target.copy(tA);
+    place(new THREE.Spherical(fitDistance * zoom, phi, theta));
+    onChange();
+    return true;
+  }
+  function setMode(next) {
+    if (next === mode) return;
+    mode = next;
+    tween = null; spin = 0; touch = null;
+    controls.enabled = mode === 'orbit';
+    canvas.tabIndex = mode === 'orbit' ? 0 : -1;
+    lastPose = '';
+  }
+  // the orbit camera as it stands (or where its running move will end), to put back after the story
+  function snapshot() {
+    const s = spherical();
+    if (tween) { s.theta = tween.from.theta + tween.delta.theta; s.phi = tween.from.phi + tween.delta.phi; s.radius = tween.from.r + tween.delta.r; }
+    return { theta: s.theta, phi: s.phi, zoom: s.radius / fitDistance, target: controls.target.clone(), view: activeView };
+  }
+  function restore(snap) {
+    if (!snap) return;
+    tween = null; spin = 0;
+    controls.target.copy(snap.target);
+    place(new THREE.Spherical(fitDistance * snap.zoom, snap.phi, snap.theta));
+    setActive(snap.view);
+    onChange();
+  }
+
   // start at home
   place(new THREE.Spherical(1, views.home.polar * DEG, views.home.azimuth * DEG));
 
   return {
-    controls, resize, setView, zoomBy,
+    controls, resize, setView, zoomBy, pose, setMode, snapshot, restore,
+    get mode() { return mode; },
     reset: () => setView('home'),
     get view() { return activeView; },
     onView: (f) => viewListeners.add(f),
