@@ -20,6 +20,7 @@ const CODE = [
   'src/vehicle/viewer/camera-rig.js',
   'src/story/chapters/power-look.js',
   'src/story/chapters/yours-look.js',
+  'src/story/chapters/close-look.js',
   'src/vehicle/viewer/fit.js',
 ];
 export const STAMP = 'public/vehicle/posters/posters.json';

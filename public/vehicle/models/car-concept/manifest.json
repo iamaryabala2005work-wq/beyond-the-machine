@@ -198,6 +198,11 @@
         "azimuth": -55,
         "polar": 84,
         "zoom": 1.0
+      },
+      "close": {
+        "azimuth": -90,
+        "polar": 86,
+        "zoom": 1.0
       }
     }
   },

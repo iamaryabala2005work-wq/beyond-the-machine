@@ -7,6 +7,8 @@ import './styles/page.css';
 import './styles/story.css';
 import { initVehicleStages } from './vehicle/stage.js';
 import { initStory } from './story/story.js';
+import { initSignature } from './story/signature.js';
 
 initVehicleStages();
 initStory();
+initSignature();

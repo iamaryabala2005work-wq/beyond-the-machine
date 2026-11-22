@@ -38,11 +38,13 @@ async function setup(manifestUrl) {
 // offset [x, y] shifts the car in the frame as the viewer's setFrameShift does (x of the width, positive
 // right; y of the height, positive down); light { key, silhouette } sets the story's light levels.
 // fitRect { left, top, right, bottom } (fractions of the frame): instead of the shot's zoom and the offset,
-// fit the car into that rect at every heading as the live viewer does (fit.js, Chapter V); the result is
-// then { png, box } with the fitted box in fractions of the frame.
-window.renderPoster = async ({ manifestUrl, shot, width, height, scale = 1, shadow = true, offset = null, light = null, fitRect = null }) => {
+// fit the car into that rect at every heading as the live viewer does (fit.js, Chapter V), or at the
+// shot's own heading alone with fitSteps 1 (Chapter VI); the result is then { png, box } with the fitted
+// box in fractions of the frame. paint: a variants.paint id to draw the car in (the default otherwise).
+window.renderPoster = async ({ manifestUrl, shot, width, height, scale = 1, shadow = true, offset = null, light = null, fitRect = null, fitSteps = 16, paint = null }) => {
   ready ??= setup(manifestUrl);
   const s = await ready;
+  applyPaint(s, paint);
   s.renderer.setPixelRatio(scale);
   s.renderer.setSize(width, height, false);
   s.camera.aspect = width / height;
@@ -57,7 +59,7 @@ window.renderPoster = async ({ manifestUrl, shot, width, height, scale = 1, shad
     const cam = s.camera.clone();
     cam.clearViewOffset();
     cam.updateProjectionMatrix();
-    const fit = fitTurntable({ cam, place: s.rig.placeAt, points: s.model.points, shot, rect: fitRect });
+    const fit = fitTurntable({ cam, place: s.rig.placeAt, points: s.model.points, shot, rect: fitRect, steps: fitSteps });
     s.camera.setViewOffset(width, height, -width * fit.x, -height * fit.y, width, height);
     s.camera.updateProjectionMatrix();
     shot = { ...shot, zoom: fit.zoom };
@@ -71,4 +73,15 @@ window.renderPoster = async ({ manifestUrl, shot, width, height, scale = 1, shad
   const png = s.renderer.domElement.toDataURL('image/png');
   return fitRect ? { png, box } : png;
 };
+// the paint as the live viewer sets it (viewer.js setPaint): the variant's values on the materials
+// materials.paint matches, the default variant when none is named
+function applyPaint(s, id) {
+  const list = s.manifest.variants?.paint ?? [];
+  const v = list.find((x) => x.id === id) ?? list.find((x) => x.default) ?? list[0];
+  if (!v) return;
+  for (const m of s.model.paint) {
+    if (v.set.color) m.color.set(v.set.color);
+    for (const k of ['metalness', 'roughness', 'clearcoatRoughness']) if (k in v.set) m[k] = v.set[k];
+  }
+}
 window.posterReady = true;

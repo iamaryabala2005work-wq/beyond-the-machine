@@ -26,36 +26,44 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
 .story__still { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 /* the light reveal on the still: up from the black page by --lp (story.js; 1 without script) */
 .story__still--lit { opacity: var(--lp, 1); }
-/* one still per chapter: the stage shows the one whose chapter has the car (data-shot, story.js). A change
-   of chapter brings the next still in over the last, which goes only once it is covered, so the stage never
-   shows an empty moment between them. */
+/* one still per chapter: the stage shows the one whose chapter has the car (data-shot, story.js). One car
+   at a time: on a change of chapter the last still goes before the next comes in (a brief dip to the black
+   page, as the frames change over), never one over the other. */
 /* placed by yours.js; with its shadow margin it can be wider than the screen (the stage clips it), so the
    page's img max-width must not squeeze it out of shape */
-.story__still--yours { inset: auto; left: 0; top: 0; width: 0; height: 0; max-width: none; max-height: none; opacity: 0; }
-.story__stage[data-shot="yours"] .story__still--power { opacity: 0; }
-.story__stage[data-shot="yours"] .story__still--yours { opacity: 1; }
+.story__still--yours, .story__still--close { inset: auto; left: 0; top: 0; width: 0; height: 0; max-width: none; max-height: none; opacity: 0; }
+.story__stage:is([data-shot="yours"], [data-shot="close"]) .story__still--power { opacity: 0; }
+.story__stage[data-shot="yours"] .story__still--yours, .story__stage[data-shot="close"] .story__still--close { opacity: 1; }
 @media (prefers-reduced-motion: no-preference) {
-  .story__still--power, .story__still--yours { transition: opacity 300ms linear 400ms; }
-  .story__stage[data-shot="power"] .story__still--power, .story__stage[data-shot="yours"] .story__still--yours { transition: opacity 400ms var(--ease-settle); }
+  .story__still--power, .story__still--yours, .story__still--close { transition: opacity 200ms linear; }
+  .story__stage[data-shot="power"] .story__still--power, .story__stage[data-shot="yours"] .story__still--yours,
+  .story__stage[data-shot="close"] .story__still--close { transition: opacity 260ms var(--ease-settle) 200ms; }
 }
 /* and on the live car (--lv, story.js): its unlit pixels are black, a shade off the page's own ground, so
    it is faded out entirely at the start of the reveal and fully there once a little light is up. The
    stand-in tag describes the car, so it comes with it. */
 .story__canvas, .story__standin { opacity: clamp(0, calc(var(--lv, 1) / .12), 1); }
 .story__standin { position: absolute; right: var(--gut); bottom: var(--s-5); }
+/* phones, where the tag sits at the top: while a chapter lets go (story.js data-between) the tag steps
+   out, so its words rising past never run across it. From 640px it sits at the foot, clear of them. */
+@media (max-width: 639px) { .story__stage[data-between] .story__standin { opacity: 0; } }
+@media (prefers-reduced-motion: no-preference) { .story__standin { transition: opacity 200ms linear; } }
 
 /* states (story.js): poster = no live 3D (none on this device, still loading, failed, or the context lost);
    waiting = the 3D car is still in the hero; entering = it has moved here and is drawing the chapter's
-   pose, still hidden; live = it is here and shown. The stage is never empty: until the live car is
-   shown, the stills stand in at the same framing and light. */
+   pose, still hidden, over the still; reshoot = it is fading out to the page, or hidden, to change shot;
+   live = it is here and shown.
+   Never two cars: the stills show only while the canvas is fully hidden (waiting, entering, poster).
+   entering -> live is a cut in one frame: the canvas, which has drawn the still's own picture, takes its
+   place, and the stills leave the compositor (images kept at opacity 0 still cost every frame).
+   live -> reshoot: the canvas fades out to the black page with no still under it; reshoot -> live
+   (data-reveal="fade"): it fades back in, from the page. */
 .story__stage .vehicle-stage__gl { opacity: 0; }
 .story__stage[data-state="live"] .vehicle-stage__gl { opacity: 1; }
-/* live: the stills go once the canvas has faded in over them (both at once would dip through dark), and
-   leave the compositor entirely (two full-screen images kept at opacity 0 still cost every frame) */
-.story__stage[data-state="live"] .story__stills { opacity: 0; visibility: hidden; }
+.story__stage:is([data-state="live"], [data-state="reshoot"]) .story__stills { opacity: 0; visibility: hidden; }
 @media (prefers-reduced-motion: no-preference) {
-  .story__stage .vehicle-stage__gl { transition: opacity 400ms var(--ease-settle); }
-  .story__stage[data-state="live"] .story__stills { transition: opacity 0s linear 450ms, visibility 0s linear 450ms; }
+  .story__stage[data-state="reshoot"] .vehicle-stage__gl { transition: opacity 250ms var(--ease-settle); }
+  .story__stage[data-state="live"][data-reveal="fade"] .vehicle-stage__gl { transition: opacity 320ms var(--ease-settle); }
 }
 
 /* ---- a chapter: a tall section whose frame stays pinned for (height - 100svh) of scroll */
@@ -127,6 +135,13 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
   .chapter__source { font-size: 11px; }
 }
 
+/* ---- leaving: as a chapter's frame lets go and scrolls up (--x, story.js), what sits at its foot (the
+   source line) fades out over the first tenth of a screen, before it can
+   rise across the car, which stays pinned behind it until the next chapter takes it. The words at the top
+   scroll away from the car, so they simply go with the frame. */
+.chapter { --gone: clamp(0, 1 - var(--x, 0) / .1, 1); }
+.chapter .chapter__source { opacity: var(--gone); }
+
 /* ---- V Yours: the mark and the word at the top, the car in the free band under them (fitted there by
    yours.js so that no heading of it reaches the words or the swatches), the finish and the swatches at
    the foot. The frame lets the pointer through to the car; only the swatches take it. */
@@ -155,21 +170,29 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
 .yours__note { margin: var(--s-3) 0 0; font: 400 12px/1.5 var(--font-mono); color: var(--p-muted); }
 .yours__note[hidden] { display: none; }
 
-/* reveals: the mark and the word as Power's (from --e; the word sharpens out of a blur on desktop only); the
-   finish and the swatches rise in over the chapter's first fifth (--p) */
-.yours__title, .chapter--yours .chapter__mark { --k: clamp(0, (var(--e, 1) - .35) / .45, 1); opacity: var(--k); }
-.yours__title { filter: blur(calc((1 - var(--k)) * 10px)); }
-.yours__controls { --k: clamp(0, var(--p, 1) / .2, 1); opacity: var(--k); translate: 0 calc((1 - var(--k)) * 8px); }
+/* reveals: the mark and the word come in once the frame has landed (data-arrived, story.js), not as it
+   rises: the car is already in place on the pinned stage by then, and a word on its way up would cross it.
+   Desktop: the word sharpens out of a 10px blur. The mobile tier: no blur, the words fade and rise 12px.
+   The finish and the swatches rise in over the chapter's first fifth (--p). */
+.yours__title, .chapter--yours .chapter__mark { opacity: 0;
+  transition: opacity var(--dur-reveal) var(--ease-settle), filter var(--dur-reveal) var(--ease-settle), translate var(--dur-reveal) var(--ease-settle); }
+.yours__title { filter: blur(10px); }
+/* and they retire over the last 5% of the pinned scroll, while nothing moves, so they are gone before the
+   frame lets go and could rise across the car */
+.yours__controls { --k: clamp(0, var(--p, 1) / .2, 1); --retire: clamp(0, (1 - var(--p, 0)) / .05, 1);
+  opacity: calc(var(--k) * var(--retire)); translate: 0 calc((1 - var(--k)) * 8px); }
 @media (max-width: 639px), (pointer: coarse) {
   .yours__title { filter: none; }
-  .yours__title, .chapter--yours .chapter__mark { translate: 0 calc((1 - var(--k)) * 12px); }
+  .yours__title, .chapter--yours .chapter__mark { translate: 0 12px; }
 }
+.chapter--yours[data-arrived] :is(.yours__title, .chapter__mark) { opacity: 1; filter: none; translate: none; }
 @media (prefers-reduced-motion: reduce) {
   .yours__title, .chapter--yours .chapter__mark, .yours__controls { filter: none; translate: none; opacity: 0; transition: opacity 150ms linear; }
-  .chapter--yours[data-entered] :is(.yours__title, .chapter__mark, .yours__controls) { opacity: 1; }
-  .story:not([data-story-ready]) :is(.yours__title, .chapter--yours .chapter__mark, .yours__controls) { opacity: 1; }
+  .chapter--yours[data-arrived] :is(.yours__title, .chapter__mark) { opacity: 1; }
+  .chapter--yours[data-entered] .yours__controls { opacity: var(--retire, 1); }
   .yours__dot { transition: none; }
 }
+.story:not([data-story-ready]) :is(.yours__title, .chapter--yours .chapter__mark, .yours__controls) { opacity: 1; filter: none; translate: none; }
 
 /* from 640px the swatches keep clear of the stand-in tag in the stage's lower right corner */
 @media (min-width: 640px) { .yours__swatches { max-width: calc(100% - 220px); } }
@@ -180,4 +203,56 @@ html[data-buttons="pill"] .btn--outline::after { content: none; }
     margin-inline: calc(-1 * var(--gut)); padding-inline: var(--gut); }
   .yours__swatches::-webkit-scrollbar { display: none; }
   .yours__swatch { height: 44px; }
+}
+
+/* ---- VI Close: the final shot. Only the mark, at the top; the car is fitted into the band under it
+   (close.js). The mark comes in once the frame has landed (data-arrived, as Yours' words), never across
+   the car. Then the story ends and the stage, the car and this frame scroll away together. */
+.chapter--close { height: 260svh; pointer-events: none; }
+.chapter--close .chapter__frame { grid-template-rows: auto 1fr; }
+.chapter--close .chapter__mark { margin: 0; opacity: 0; translate: 0 8px;
+  transition: opacity var(--dur-reveal) var(--ease-settle), translate var(--dur-reveal) var(--ease-settle); }
+.chapter--close[data-arrived] .chapter__mark { opacity: 1; translate: none; }
+@media (max-width: 639px) { .chapter--close { height: 300svh; } }
+@media (prefers-reduced-motion: reduce) {
+  .chapter--close .chapter__mark { translate: none; transition: opacity 150ms linear; }
+}
+.story:not([data-story-ready]) .chapter--close .chapter__mark { opacity: 1; translate: none; }
+
+/* ---- the signature, on black after the car has gone: as tall as what it holds (no empty band at any
+   width), the kit's one-screen section height turned off */
+/* (by id: the kit's one-screen minimum, main > :is(section, .section):not(.hero), outweighs a class) */
+#signature.signature { height: auto; min-height: 0; padding: clamp(112px, 22svh, 220px) 0 clamp(96px, 16svh, 160px); background: var(--p-bg); }
+#signature.signature > .wrap { height: auto; }
+.signature__in { display: flex; flex-direction: column; align-items: flex-start; }
+.signature__title { margin: 0; font: var(--display-weight, 500) clamp(48px, min(9.5vw, 16svh), 152px)/.9 var(--font-display);
+  letter-spacing: var(--display-tracking-xl, -.045em); text-transform: uppercase; color: var(--p-ink); text-wrap: balance; }
+/* the credit: mono and capitals like the chapter marks, but in ink and large enough to read at a glance;
+   still well under the line above it */
+.signature__by { margin: var(--s-6) 0 0; font: 500 clamp(15px, .35vw + 13px, 19px)/1.4 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--p-ink); }
+.signature__cta { margin-top: var(--s-7); display: inline-flex; align-items: center; justify-content: center; gap: 10px; border-radius: 999px; text-decoration: none; }
+@media (max-width: 639px) {
+  /* the black under the departing car already gives the line its air */
+  #signature.signature { padding-top: 56px; }
+  .signature__in { align-items: stretch; }
+  .signature__title { font-size: clamp(44px, 14vw, 72px); }
+  .signature__by { margin-top: var(--s-5); }
+  .signature__cta { margin-top: var(--s-6); width: 100%; }
+}
+
+/* the reveal (signature.js, once): the line sharpens out of a 10px blur on desktop; on the mobile tier no
+   blur (a phone draws it as a grey smudge), the words fade and rise 12px. The credit and the pill follow. */
+[data-signature] :is(.signature__title, .signature__by, .signature__cta) {
+  transition: opacity var(--dur-reveal) var(--ease-settle), filter var(--dur-reveal) var(--ease-settle), translate var(--dur-reveal) var(--ease-settle); }
+[data-signature] .signature__by { transition-delay: 160ms; }
+[data-signature] .signature__cta { transition-delay: 320ms, 320ms, 320ms; }
+[data-signature="hidden"] :is(.signature__title, .signature__by, .signature__cta) { opacity: 0; translate: 0 12px; }
+[data-signature="hidden"] .signature__title { filter: blur(10px); translate: none; }
+[data-signature] .signature__cta:hover { transition-property: border-color, color; transition-duration: var(--dur-fast); transition-delay: 0s; }
+@media (max-width: 639px), (pointer: coarse) {
+  [data-signature="hidden"] .signature__title { filter: none; translate: 0 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-signature] :is(.signature__title, .signature__by, .signature__cta) { transition: opacity 150ms linear; translate: none; filter: none; }
+  [data-signature="hidden"] :is(.signature__title, .signature__by, .signature__cta) { translate: none; filter: none; }
 }

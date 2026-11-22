@@ -5,9 +5,10 @@
 
 // the turntable: the car starts at the manifest's "yours" shot (a low front three-quarter, more of the
 // flank than the windscreen: the paint reads best on the side panels) and turns TURN degrees as the
-// chapter scrolls by, slowly and evenly, round toward the full side view (negative: the way that shows
-// more of the flank). Reduced motion: it stays at the start.
-export const TURN = -60;
+// chapter scrolls by, slowly and evenly, round to the full side view (negative: the way that shows more
+// of the flank). It ends on the heading of Chapter VI's "close" shot (-55 - 35 = -90), so the live car
+// carries straight on into the final shot (story.js). Reduced motion: it stays at the start.
+export const TURN = -35;
 export const turnAt = (p) => TURN * Math.min(1, Math.max(0, p));
 
 // the light: as Chapter III leaves it (lit as in the hero, with the story's roofline light and floor

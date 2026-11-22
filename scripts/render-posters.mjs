@@ -7,9 +7,13 @@
 //                                                      Chapter III's stage at the end of its light reveal (the
 //                                                      start is the black page), per layout
 //                                                      (src/story/chapters/power-look.js)
-//   public/vehicle/posters/yours-{800,1600}.webp       Chapter V's car at the start of its turntable, in the
-//                                                      default paint, cut to the box the live car is fitted
+//   public/vehicle/posters/yours-<paint>-{800,1600}.webp
+//                                                      Chapter V's car at the start of its turntable, once
+//                                                      per paint, cut to the box the live car is fitted
 //                                                      into (src/story/chapters/yours-look.js)
+//   public/vehicle/posters/close-<paint>-{800,1600}.webp
+//                                                      Chapter VI's final shot, once per paint, cut the same
+//                                                      way (src/story/chapters/close-look.js)
 //   public/share.jpg                                   the link-preview card
 // The shots come from the manifest's "posters" block (model-agnostic: a new car brings its own), and the
 // car is drawn by the viewer's own model, light and camera code (scripts/posters/render.js), in a headless
@@ -26,6 +30,7 @@ import { fileURLToPath } from 'node:url';
 import { STAMP, manifestUrl, postersHash, stampedHash } from './posters/stamp.mjs';
 import { POSTERS as POWER, lightAt } from '../src/story/chapters/power-look.js';
 import { LIGHT as YOURS_LIGHT, STILL as YOURS_STILL, STILL_PAD } from '../src/story/chapters/yours-look.js';
+import { LIGHT as CLOSE_LIGHT, STILL as CLOSE_STILL, STILL_PAD as CLOSE_PAD } from '../src/story/chapters/close-look.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const OUT = 'public/vehicle/posters';
@@ -152,31 +157,39 @@ try {
     }
   }
 
-  // Chapter V's still: fitted as the live chapter fits the car (every heading inside a box, fit.js), drawn
-  // at the turntable's start, then cut to that box plus STILL_PAD of it on each side for the ground shadow
-  {
-    const shot = manifest.camera?.shots?.yours;
-    if (!shot) throw new Error(`${url} has no camera.shots.yours`);
-    const [W, H] = YOURS_STILL.size;
-    // the box sits in the middle with room around it for the pad
-    const m = STILL_PAD + 0.04;
-    const { png: dataUrl, box } = await page.evaluate((o) => window.renderPoster(o), { manifestUrl: url, shot, width: W, height: H, scale: SCALE,
-      shadow: true, light: YOURS_LIGHT, fitRect: { left: m, top: m, right: 1 - m, bottom: 1 - m } });
-    const png = Buffer.from(dataUrl.split(',')[1], 'base64');
-    const bw = (box.right - box.left) * W * SCALE, bh = (box.bottom - box.top) * H * SCALE;
-    const crop = { left: Math.round(box.left * W * SCALE - bw * STILL_PAD), top: Math.round(box.top * H * SCALE - bh * STILL_PAD),
-      width: Math.round(bw * (1 + 2 * STILL_PAD)), height: Math.round(bh * (1 + 2 * STILL_PAD)) };
-    if (crop.left < 0 || crop.top < 0 || crop.left + crop.width > W * SCALE || crop.top + crop.height > H * SCALE) {
-      throw new Error('yours still: the padded box leaves the render; lower STILL_PAD');
+  // a chapter's fitted still, once per paint: fitted as the live chapter fits the car (fit.js: at every
+  // heading for Chapter V, at the shot's own for Chapter VI), then cut to that box plus pad of it on each
+  // side for the ground shadow. Every paint gives the same box, so one width and height serve them all.
+  const paints = (manifest.variants?.paint ?? []).map((v) => v.id);
+  if (!paints.length) paints.push(null);
+  async function fittedStills(name, { shot, size: [W, H], widths }, pad, light, fitSteps) {
+    if (!shot) throw new Error(`${url} has no camera.shots.${name}`);
+    const m = pad + 0.04; // the box sits in the middle with room around it for the pad
+    let shape = null;
+    for (const paint of paints) {
+      const { png: dataUrl, box } = await page.evaluate((o) => window.renderPoster(o), { manifestUrl: url, shot, width: W, height: H, scale: SCALE,
+        shadow: true, light, paint, fitSteps, fitRect: { left: m, top: m, right: 1 - m, bottom: 1 - m } });
+      const png = Buffer.from(dataUrl.split(',')[1], 'base64');
+      const bw = (box.right - box.left) * W * SCALE, bh = (box.bottom - box.top) * H * SCALE;
+      const crop = { left: Math.round(box.left * W * SCALE - bw * pad), top: Math.round(box.top * H * SCALE - bh * pad),
+        width: Math.round(bw * (1 + 2 * pad)), height: Math.round(bh * (1 + 2 * pad)) };
+      if (crop.left < 0 || crop.top < 0 || crop.left + crop.width > W * SCALE || crop.top + crop.height > H * SCALE) {
+        throw new Error(`${name} still: the padded box leaves the render; lower its STILL_PAD`);
+      }
+      const cut = await sharp(png).extract(crop).png().toBuffer();
+      for (const w of widths) {
+        const file = `${OUT}/${name}-${paint ?? 'default'}-${w}.webp`;
+        const info = await sharp(cut).resize({ width: w }).webp(WEBP).toFile(`${root}${file}`);
+        written[file] = info.size;
+      }
+      shape = [crop.width, crop.height];
     }
-    const cut = await sharp(png).extract(crop).png().toBuffer();
-    for (const w of YOURS_STILL.widths) {
-      const file = `${OUT}/yours-${w}.webp`;
-      const info = await sharp(cut).resize({ width: w }).webp(WEBP).toFile(`${root}${file}`);
-      written[file] = info.size;
-    }
-    written.yoursShape = [crop.width, crop.height];
+    shapes[name] = shape;
   }
+  const shapes = {};
+  await fittedStills('yours', { shot: manifest.camera?.shots?.yours, ...YOURS_STILL }, STILL_PAD, YOURS_LIGHT, 16);
+  await fittedStills('close', { shot: manifest.camera?.shots?.close, ...CLOSE_STILL }, CLOSE_PAD, CLOSE_LIGHT, 1);
+  written.shapes = shapes;
 
   // the link-preview card: the new hero poster on the site's ground, the title and the concept label
   {
@@ -189,8 +202,8 @@ try {
     written['public/share.jpg'] = info.size;
   }
   delete written.heroMaster;
-  console.log(`yours still: ${written.yoursShape.join(' x ')} (index.html's width and height on the still must keep this shape)`);
-  delete written.yoursShape;
+  for (const [name, shape] of Object.entries(written.shapes)) console.log(`${name} stills: ${shape.join(' x ')} (index.html's width and height on the ${name} still must keep this shape)`);
+  delete written.shapes;
 } finally {
   await browser.close();
   await server.close();
