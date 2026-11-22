@@ -371,6 +371,8 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
     setFrameShift(v, x = 0) { if (frameShift === v && frameShiftX === x) return; frameShift = v; frameShiftX = x; applyView(); },
     // the story's silhouette light, 0..1: a cool rim along the roofline and a soft glow on the floor (0 = off, as in the hero)
     setSilhouette(level) { if (lighting?.setSilhouette(level)) invalidate(); },
+    // the story's warm grade (Chapter I), 0..1: an amber key, the rest in shadow (0 = off, as in the hero)
+    setWarmth(level) { if (lighting?.setWarmth(level)) invalidate(); },
     // the story's light sweep (Chapter VI): t 0..1 across the frame, level 0..1 (0 = off, as in the hero)
     setSweep(t = 0, level = 0) { if (lighting?.setSweep(t, level)) invalidate(); },
     // ---- paint (Chapter V): the variants as the manifest lists them ({ id, label, color }), the one

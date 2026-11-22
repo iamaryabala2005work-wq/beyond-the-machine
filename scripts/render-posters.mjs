@@ -3,6 +3,10 @@
 //   public/vehicle/posters/hero-{960,1600,2400}.webp   the hero poster: the first paint, the fallback when
 //                                                      there is no 3D, the story's fallback and the scan mask
 //   public/vehicle/posters/detail-{800,1400}.webp      the close view in the specifications section
+//   public/vehicle/posters/name-<paint>-{800,1600}.webp
+//                                                      Chapter I's low front shot in its warm light, once
+//                                                      per paint, cut to the box the live car is fitted
+//                                                      into (src/story/chapters/name-look.js)
 //   public/vehicle/posters/power-{stack,split}-lit.webp
 //                                                      Chapter III's stage at the end of its light reveal (the
 //                                                      start is the black page), per layout
@@ -30,6 +34,7 @@ import { fileURLToPath } from 'node:url';
 import { STAMP, manifestUrl, postersHash, stampedHash } from './posters/stamp.mjs';
 import { POSTERS as POWER, lightAt } from '../src/story/chapters/power-look.js';
 import { LIGHT as YOURS_LIGHT, STILL as YOURS_STILL, STILL_PAD } from '../src/story/chapters/yours-look.js';
+import { LIGHT as NAME_LIGHT, STILL as NAME_STILL, STILL_PAD as NAME_PAD } from '../src/story/chapters/name-look.js';
 import { LIGHT as CLOSE_LIGHT, STILL as CLOSE_STILL, STILL_PAD as CLOSE_PAD } from '../src/story/chapters/close-look.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -187,6 +192,7 @@ try {
     shapes[name] = shape;
   }
   const shapes = {};
+  await fittedStills('name', { shot: manifest.camera?.shots?.name, ...NAME_STILL }, NAME_PAD, NAME_LIGHT, 1);
   await fittedStills('yours', { shot: manifest.camera?.shots?.yours, ...YOURS_STILL }, STILL_PAD, YOURS_LIGHT, 16);
   await fittedStills('close', { shot: manifest.camera?.shots?.close, ...CLOSE_STILL }, CLOSE_PAD, CLOSE_LIGHT, 1);
   written.shapes = shapes;

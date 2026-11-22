@@ -18,6 +18,7 @@ const CODE = [
   'src/vehicle/viewer/model.js',
   'src/vehicle/viewer/lighting.js',
   'src/vehicle/viewer/camera-rig.js',
+  'src/story/chapters/name-look.js',
   'src/story/chapters/power-look.js',
   'src/story/chapters/yours-look.js',
   'src/story/chapters/close-look.js',
