@@ -70,7 +70,7 @@ export function initStory() {
   // the camera spring: where the camera is (in p), its speed, and the frame time it last stepped at
   let camP = -1, camV = 0, camAt = 0, camChapter = null;
   let shown = false;         // the live canvas has drawn the chapter's pose and is shown
-  let lastLp = '';
+  let lastLp = '', lastLv = '';
 
   function setState() {
     const state = !viewer || lost ? 'poster' : !inStory ? 'waiting' : shown ? 'live' : 'entering';
@@ -102,6 +102,7 @@ export function initStory() {
     lastShot = null;
     camP = -1; // the camera starts where the scroll is, not eased in from elsewhere
     shown = false;
+    lastLv = '';
     setState();
     // the canvas is shown once it has drawn the chapter's pose at its new size: the pose is set in this
     // frame (tick), the new size is taken in the next (viewer.js), the frame after draws both
@@ -201,9 +202,11 @@ export function initStory() {
         // a cut, not a move: the shot before this chapter until it is well under way
         const c = p >= CUT_AT || i === 0 ? active : chapters[i - 1];
         if (c !== lastShot) { lastShot = c; c.impl.camera(viewer, 1, { reduced, cut: true }); }
+        setLv(1);
       } else {
         const moving = spring(p, now);
         active.impl.camera(viewer, camP, { reduced });
+        setLv(active.impl.level?.(camP, { reduced }) ?? 1);
         // keep stepping until the camera has caught up with the scroll; then nothing more is drawn
         if (moving) schedule();
       }
@@ -217,6 +220,12 @@ export function initStory() {
       const lp = (active.impl.level?.(Math.max(0, active.p), { reduced }) ?? 1).toFixed(3);
       if (lp !== lastLp) { lastLp = lp; stageEl.style.setProperty('--lp', lp); }
     }
+  }
+
+  // the live car's light level, for what CSS does with it (the car and its tag fade up from the page, story.css)
+  function setLv(level) {
+    const lv = level.toFixed(3);
+    if (lv !== lastLv) { lastLv = lv; stageEl.style.setProperty('--lv', lv); }
   }
 
   addEventListener('scroll', () => schedule(), { passive: true });

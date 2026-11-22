@@ -243,7 +243,7 @@ export function createViewer(host, { stage, manifestUrl, tier, reducedMotion, on
     if (destroyed) { disposeObject(model.root); return; }
     scene.add(model.root);
 
-    lighting = createLighting({ scene, renderer, box: model.box, accent, reducedMotion });
+    lighting = createLighting({ scene, renderer, box: model.box, accent, reducedMotion, root: model.root });
     rig = createRig({ camera, canvas, stage, box: model.box, config: cam, reducedMotion, onChange: invalidate });
 
     resize();

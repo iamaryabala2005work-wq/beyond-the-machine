@@ -12,21 +12,23 @@ export const FRAME = {
   stack: { x: 0, y: 0.2, zoom: 1.0 },            // below: the car in the lower half, under the words
 };
 
-// the light reveal, from L = 0 (a silhouette: no key, almost no room light, only the roofline rim, the
-// floor glow and the tail lights) to L = 1 (lit as in the hero)
+// the light reveal, from L = 0 (nothing: every light, the floor glow and the car's own lamps off, so the
+// car is black on black) to L = 1 (lit as in the hero). The roofline light and the floor glow come up
+// first (full by L 0.4), so the car's outline and its tail lights are the first things out of the dark.
 export function lightAt(L) {
-  return { key: L, silhouette: 0.6 - 0.25 * L };
+  return { key: L, silhouette: 0.35 * Math.min(1, L / 0.4) };
 }
 
-// how far the light is up at chapter progress p: a smoothstep from dark at 3% to full at 97%, so it
-// starts and lands gently and climbs evenly in between
+// how far the light is up at chapter progress p: black until 10% (where the count starts), then up in
+// step with the count, slow at first, to full only at the very end
+export const DARK_UNTIL = 0.1;
 export function levelAt(p) {
-  const t = Math.min(1, Math.max(0, (p - 0.03) / 0.94));
-  return t * t * (3 - 2 * t);
+  const t = Math.min(1, Math.max(0, (p - DARK_UNTIL) / (0.98 - DARK_UNTIL)));
+  return t ** 1.4;
 }
 
 // the stills scripts/render-posters.mjs makes of this chapter: per layout, the size it is drawn at (the
-// stage's shape on such a screen) and the two ends of the reveal
+// stage's shape on such a screen). Only the lit end: the start of the reveal is the empty page.
 export const POSTERS = {
   stack: { size: [780, 1688], frame: FRAME.stack },   // a phone, 390 x 844 at 2x
   split: { size: [1920, 1200], frame: FRAME.split },  // a desktop, 16:10

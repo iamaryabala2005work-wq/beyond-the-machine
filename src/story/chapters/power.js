@@ -4,13 +4,13 @@
 // car          still. It holds the manifest's "power" shot (a low rear three-quarter) for the whole chapter,
 //              framed per layout (power-look.js); it is posed before it is ever seen (story.js fades the
 //              live canvas in only once it has drawn this pose; until then the stage shows a still of it)
-// light        the reveal: at the start the car is a silhouette (no key light, almost no room light, only
-//              the roofline rim, the floor glow and the tail lights); scrolling brings the light up until
-//              the car is lit as in the hero at the end; scrolling back returns it to shadow. story.js eases
-//              the level through its damped spring, so the light glides rather than steps. Brightness only:
-//              no light is added or removed, so no shader recompiles; frames are drawn only while it moves.
-// p 0.1..0.85  the figure counts 0 to 1,600 on a quadratic ease-out: even enough to take several swipes
-//              on a phone, slowing into its last hundreds; scrolling back counts it down
+// light        the reveal: black until p 0.1 (every light, the floor glow and the tail lights off; the
+//              screen shows only the words), then up in step with the count until the car is lit as in
+//              the hero at the end; scrolling back returns it to black. story.js eases the level through
+//              its damped spring, so the light glides rather than steps. Brightness only: no light is
+//              added or removed, so no shader recompiles; frames are drawn only while it moves.
+// p 0.1..0.85  the figure counts 0 to 1,600 at a steady rate, easing out only over its last hundred;
+//              scrolling back counts it down
 // p 0.86..0.95 the petrol line rises in (CSS)
 // Reduced motion: the car lit, the figure at 1,600, nothing animated.
 import { FRAME, lightAt, levelAt } from './power-look.js';
@@ -19,7 +19,11 @@ const TARGET = 1600;
 const COUNT = [0.1, 0.85];  // the share of the chapter the count runs over
 const LATE = 0.86;          // the petrol line
 
-const easeOut = (t) => 1 - (1 - t) ** 2;
+// linear, then a quadratic ease-out over the last 100 hp that meets the line at the same slope
+const EASE_FROM = 1 - 100 / TARGET;          // where the ease-out takes over, as a share of the count
+const SLOPE = 1 + 100 / TARGET;              // the line's slope (just over 1: it gives the ease room)
+const T0 = EASE_FROM / SLOPE, C = (1 - EASE_FROM) / (1 - T0) ** 2;
+const easeOut = (t) => (t < T0 ? SLOPE * t : 1 - C * (1 - t) ** 2);
 const clamp01 = (t) => Math.min(1, Math.max(0, t));
 const fmt = new Intl.NumberFormat('en-US');
 const splitQuery = matchMedia('(min-width: 900px)');

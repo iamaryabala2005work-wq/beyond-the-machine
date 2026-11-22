@@ -22,7 +22,7 @@ async function setup(manifestUrl) {
   const scene = new THREE.Scene();
   scene.add(model.root);
   const accent = '#7fe0ee'; // the page's --p-accent, as the viewer reads it from the stage
-  const lighting = createLighting({ scene, renderer, box: model.box, accent, reducedMotion: true });
+  const lighting = createLighting({ scene, renderer, box: model.box, accent, reducedMotion: true, root: model.root });
   // the contact shadow: the one mesh the lighting adds (a cut-out poster leaves it out; CSS draws its own)
   const shadow = scene.children.find((o) => o.isMesh && o.material?.isMeshBasicMaterial);
   const camera = new THREE.PerspectiveCamera(manifest.camera?.fov ?? 26, 1, 0.05, 200);
